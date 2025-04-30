@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Results</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,600;0,6..12,700;1,6..12,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background-color: #f8f9fa;
+            --text-color: #343a40;
+            --primary-accent: #20c997;
+            --primary-accent-darker: #1baa80;
+            --secondary-accent: #6c757d;
+            --container-bg: #ffffff;
+            --border-color: #dee2e6;
+            --error-color: #dc3545;
+            --font-family: 'Nunito Sans', sans-serif;
+            --border-radius: 6px;
+            --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 40px 20px; /* Add padding */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        #resultContainer {
+            background-color: var(--container-bg);
+            padding: 40px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            text-align: center;
+            max-width: 600px;
+            width: 90%; /* Responsive width */
+        }
+
+        #resultMessage {
+            font-size: 1.4em;
+            font-weight: 600;
+            margin-bottom: 35px;
+            line-height: 1.5;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px; /* Space between buttons */
+            flex-wrap: wrap; /* Allow buttons to wrap on small screens */
+        }
+
+        /* Base button style */
+        .results-button {
+            display: inline-block;
+            padding: 12px 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            border-radius: var(--border-radius);
+            text-decoration: none;
+            transition: all 0.2s ease-in-out;
+            text-align: center;
+        }
+
+        /* Specific button styles */
+        .back-button {
+            background-color: var(--secondary-accent);
+            color: white;
+        }
+        .back-button:hover {
+            background-color: #5a6268; /* Darker grey */
+        }
+
+        .download-button {
+            background-color: var(--primary-accent);
+            color: white;
+            visibility: hidden; /* Hidden by default */
+        }
+        .download-button:hover {
+            background-color: var(--primary-accent-darker);
+        }
+        .download-button.visible {
+            visibility: visible; /* Show when needed */
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="resultContainer">
+        <div id="resultMessage">Loading results...</div>
+        <!-- Group buttons for better layout -->
+        <div class="button-container">
+            <a href="index.html" class="results-button back-button">Run Again</a>
+            <a href="#" id="downloadButton" class="results-button download-button" download="filtered_data.csv">Download Filtered CSV</a>
+        </div>
+    </div>
+
+    <script>
+        // --- Keep your existing JavaScript logic ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const resultMessageDiv = document.getElementById('resultMessage');
+            const downloadButton = document.getElementById('downloadButton');
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const count = urlParams.get('count');
+            const method = urlParams.get('method');
+            const fileId = urlParams.get('fileId');
+
+            if (count !== null && method !== null) {
+                // Decode method name for display
+                const decodedMethod = decodeURIComponent(method);
+                resultMessageDiv.textContent = `Found ${count} independent detections based on the ${decodedMethod}.`; // Slightly rephrased
+
+                if (fileId) {
+                    downloadButton.href = `/download-filtered/${encodeURIComponent(fileId)}`;
+                    downloadButton.classList.add('visible');
+                }
+            } else {
+                resultMessageDiv.textContent = 'Could not retrieve results. Please try again.';
+                resultMessageDiv.style.color = 'var(--error-color)'; // Use error color
+                console.error('Missing URL parameters: count or method');
+            }
+        });
+    </script>
+
+</body>
+</html> 

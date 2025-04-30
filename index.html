@@ -4,66 +4,333 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Animal Detections</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,600;0,6..12,700;1,6..12,400&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --background-color: #f8f9fa; /* Very light grey */
+            --text-color: #343a40; /* Dark grey */
+            --primary-accent: #20c997; /* Teal/Green accent */
+            --primary-accent-darker: #1baa80;
+            --secondary-accent: #6c757d; /* Medium grey for secondary elements */
+            --container-bg: #ffffff; /* White container background */
+            --border-color: #dee2e6; /* Light border color */
+            --error-color: #dc3545; /* Red for errors */
+            --success-color: #198754; /* Green for success (if needed later) */
+            --font-family: 'Nunito Sans', sans-serif;
+            --border-radius: 6px;
+            --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
         body {
-            background-color: darkgreen;
-            color: white;
-            font-family: sans-serif; /* Added a basic font for better readability */
-            margin: 0; /* Remove default body margin */
-            padding: 0; /* Remove default body padding */
+            background-color: var(--background-color);
+            color: var(--text-color);
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
         }
 
         header {
-            /* Replace 'path/to/your/trees.jpg' with the actual path or URL to your image */
-            background-image: url('https://via.placeholder.com/1200x200/228B22/FFFFFF?text=Placeholder+Tree+Image'); /* Placeholder image */
-            background-size: cover; /* Cover the entire header area */
-            background-position: center; /* Center the image */
-            padding: 40px 20px; /* Add some padding */
-            text-align: center; /* Center the heading */
-            border-bottom: 3px solid #ccc; /* Optional: Add a border below header */
+            background-color: var(--primary-accent);
+            padding: 30px 20px;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 40px; /* Space below header */
         }
 
         header h1 {
-            font-size: 3em; /* Make the heading large */
-            font-weight: bold; /* Make the heading bold */
-            color: #FFFFE0; /* Light yellow for 'bright' effect */
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7); /* Add shadow for better visibility */
-            margin: 0; /* Remove default margin from h1 */
+            font-size: 2.5em;
+            font-weight: 700;
+            color: var(--container-bg); /* White text on accent background */
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+            margin: 0;
+            letter-spacing: 0.5px;
         }
 
         .content {
-            padding: 30px; /* Add padding around the button */
-            text-align: center; /* Center the button */
+            max-width: 550px; /* Limit width of the main content area */
+            margin: 0 auto 40px auto; /* Center horizontally, add bottom margin */
+            padding: 0 20px; /* Padding on smaller screens */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
-        .upload-button {
-            padding: 15px 30px;
-            font-size: 1.2em;
-            cursor: pointer; /* Indicate it's clickable */
-            background-color: #f0f0f0; /* Light grey background */
-            color: #333; /* Dark text color for button */
+        /* New container for the form elements */
+        .form-container {
+            background-color: var(--container-bg);
+            padding: 30px 35px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px; /* Space between form elements */
+        }
+
+        /* Base styles for form elements */
+        input[type="file"],
+        input[type="number"],
+        select,
+        button,
+        .upload-button-label {
+            font-family: inherit;
+            font-size: 1rem;
+            padding: 12px 18px;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            width: 100%; /* Make elements fill container width */
+            transition: all 0.2s ease-in-out;
+        }
+
+        /* Specific styles */
+        #csvFileInput { display: none; } /* Keep hiding the real input */
+
+        .upload-button-label {
+            display: inline-block; /* Needed for padding */
+            background-color: #e9ecef; /* Lighter grey for upload */
+            color: var(--text-color);
+            text-align: center;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .upload-button-label:hover {
+            background-color: #ced4da;
+        }
+
+        #fileNameDisplay {
+            font-style: italic;
+            font-size: 0.9em;
+            color: var(--secondary-accent);
+            min-height: 1.2em;
+            margin-top: -10px; /* Pull closer to upload button */
+            text-align: center;
+            width: 100%;
+        }
+
+        select#modelActionSelect {
+            appearance: none; /* Basic reset */
+            background-color: var(--container-bg);
+             background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%236c757d%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); /* Simple dropdown arrow */
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 0.65em auto;
+            cursor: pointer;
+        }
+        select#modelActionSelect:focus {
+             border-color: var(--primary-accent);
+             box-shadow: 0 0 0 3px rgba(32, 201, 151, 0.2); /* Focus ring */
+             outline: none;
+        }
+
+        #filterMinutesContainer {
+            display: none;
+            width: 100%;
+            text-align: center;
+            margin-top: -10px; /* Adjust spacing */
+            margin-bottom: -5px;
+        }
+        #filterMinutesContainer.visible { display: block; }
+
+        #filterMinutesContainer label {
+            margin-right: 10px;
+            font-size: 0.95em;
+            color: var(--secondary-accent);
+        }
+
+        #filterMinutesInput {
+            width: 80px; /* Specific width for minutes */
+            display: inline-block; /* Allow label beside it */
+            text-align: center;
+            padding: 10px 12px; /* Slightly less padding */
+        }
+        #filterMinutesInput:focus {
+             border-color: var(--primary-accent);
+             box-shadow: 0 0 0 3px rgba(32, 201, 151, 0.2);
+             outline: none;
+        }
+
+        #runModelButton {
+            background-color: var(--primary-accent);
+            color: white;
+            font-weight: 700;
             border: none;
-            border-radius: 5px;
+            cursor: pointer;
+        }
+        #runModelButton:hover:not(:disabled) {
+            background-color: var(--primary-accent-darker);
+            filter: brightness(1.05); /* Slight brightness increase */
+        }
+        #runModelButton:disabled {
+            background-color: #adb5bd; /* Grey when disabled */
+            cursor: not-allowed;
+            opacity: 0.7;
         }
 
-        .upload-button:hover {
-             background-color: #dcdcdc; /* Slightly darker on hover */
+        #statusArea {
+            margin-top: 15px;
+            font-weight: 600;
+            min-height: 1.2em;
+            text-align: center;
+            width: 100%;
+            color: var(--error-color); /* Default to error color for visibility */
         }
+        /* Optional: Add class via JS for success message styling */
+        /* #statusArea.success { color: var(--success-color); } */
+
     </style>
 </head>
 <body>
 
     <header>
-        <h1>Individual animal Detections</h1>
+        <h1>Animal Detections</h1>
     </header>
 
     <div class="content">
-        <!-- Although not functional yet, using a form is standard for uploads -->
-        <form>
-             <button type="button" class="upload-button">Upload csv</button>
-             <!-- In a real scenario, you'd have an <input type="file"> here -->
-        </form>
+        <!-- Wrap form elements in the new container -->
+        <div class="form-container">
+            <form id="uploadForm" style="width: 100%; display: contents;"> <!-- Use display:contents to avoid extra div layer affecting flex gap -->
+                <label for="csvFileInput" class="upload-button-label">Upload CSV File</label>
+                <input type="file" id="csvFileInput" name="csvFile" accept=".csv" required>
+            </form>
+
+            <div id="fileNameDisplay">No file selected</div>
+
+            <select id="modelActionSelect" required>
+                <option value="" disabled selected>-- Select Action --</option>
+                <option value="filter">Filter Data</option>
+                <option value="cluster">Cluster Data (Not Implemented)</option>
+            </select>
+
+            <div id="filterMinutesContainer">
+                <label for="filterMinutesInput">Filter Interval (min):</label>
+                <input type="number" id="filterMinutesInput" name="filterMinutes" min="1" step="1" placeholder="e.g., 30">
+            </div>
+
+            <button type="button" id="runModelButton" disabled>Run Model</button>
+
+            <div id="statusArea"></div>
+        </div>
     </div>
+
+    <script>
+        const fileInput = document.getElementById('csvFileInput');
+        const actionSelect = document.getElementById('modelActionSelect');
+        const runButton = document.getElementById('runModelButton');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+        const statusArea = document.getElementById('statusArea');
+        const filterMinutesContainer = document.getElementById('filterMinutesContainer');
+        const filterMinutesInput = document.getElementById('filterMinutesInput');
+
+        function checkEnableButton() {
+            const fileSelected = fileInput.files.length > 0;
+            const actionSelectedValue = actionSelect.value;
+            let minutesValid = true;
+
+            if (actionSelectedValue === 'filter') {
+                const minutesValue = parseInt(filterMinutesInput.value, 10);
+                minutesValid = !isNaN(minutesValue) && minutesValue > 0;
+            }
+
+            if (fileSelected && actionSelectedValue !== "" && minutesValid) {
+                runButton.disabled = false;
+            } else {
+                runButton.disabled = true;
+            }
+        }
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                fileNameDisplay.textContent = `Selected: ${fileInput.files[0].name}`;
+            } else {
+                fileNameDisplay.textContent = 'No file selected';
+            }
+            statusArea.textContent = '';
+            checkEnableButton();
+        });
+
+        actionSelect.addEventListener('change', () => {
+             statusArea.textContent = '';
+             if (actionSelect.value === 'filter') {
+                 filterMinutesContainer.classList.add('visible');
+             } else {
+                 filterMinutesContainer.classList.remove('visible');
+                 filterMinutesInput.value = '';
+             }
+             checkEnableButton();
+        });
+
+        filterMinutesInput.addEventListener('input', () => {
+            checkEnableButton();
+        });
+
+        runButton.addEventListener('click', () => {
+            if (runButton.disabled) return;
+
+            const selectedAction = actionSelect.value;
+            const file = fileInput.files[0];
+            const filterMinutes = filterMinutesInput.value;
+
+            if (!file || !selectedAction) {
+                statusArea.textContent = 'Error: File or action not selected.';
+                return;
+            }
+            if (selectedAction === 'filter' && (!filterMinutes || parseInt(filterMinutes, 10) <= 0)) {
+                 statusArea.textContent = 'Error: Please enter a valid positive number for filter minutes.';
+                 return;
+            }
+
+            statusArea.textContent = 'Uploading and processing...';
+            statusArea.style.color = 'var(--secondary-accent)'; // Use neutral color for processing
+            runButton.disabled = true;
+
+            const formData = new FormData();
+            formData.append('csvFile', file);
+            formData.append('action', selectedAction);
+            if (selectedAction === 'filter') {
+                formData.append('filterMinutes', filterMinutes);
+            }
+
+            fetch('/run-model', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    // Try to parse error JSON, otherwise use status text
+                    return response.json()
+                        .then(errData => { throw new Error(errData.error || `Server error: ${response.statusText}`); })
+                        .catch(() => { throw new Error(`Server error: ${response.statusText}`); });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Received from backend:', data);
+                let resultsUrl = `results.html?count=${data.count}&method=${encodeURIComponent(data.method)}`;
+                if (data.fileId) {
+                    resultsUrl += `&fileId=${encodeURIComponent(data.fileId)}`;
+                }
+                window.location.href = resultsUrl;
+                // No need to re-enable button or clear status on success redirect
+            })
+            .catch(error => {
+                console.error('Error processing file via backend:', error);
+                statusArea.textContent = `Error: ${error.message}`;
+                statusArea.style.color = 'var(--error-color)'; // Ensure error color
+                runButton.disabled = false;
+            });
+        });
+
+        // Initial check
+        checkEnableButton();
+    </script>
 
 </body>
 </html> 
