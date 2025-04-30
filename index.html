@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animal Detections</title>
+    <style>
+        body {
+            background-color: darkgreen;
+            color: white;
+            font-family: sans-serif; /* Added a basic font for better readability */
+            margin: 0; /* Remove default body margin */
+            padding: 0; /* Remove default body padding */
+        }
+
+        header {
+            /* Replace 'path/to/your/trees.jpg' with the actual path or URL to your image */
+            background-image: url('https://via.placeholder.com/1200x200/228B22/FFFFFF?text=Placeholder+Tree+Image'); /* Placeholder image */
+            background-size: cover; /* Cover the entire header area */
+            background-position: center; /* Center the image */
+            padding: 40px 20px; /* Add some padding */
+            text-align: center; /* Center the heading */
+            border-bottom: 3px solid #ccc; /* Optional: Add a border below header */
+        }
+
+        header h1 {
+            font-size: 3em; /* Make the heading large */
+            font-weight: bold; /* Make the heading bold */
+            color: #FFFFE0; /* Light yellow for 'bright' effect */
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7); /* Add shadow for better visibility */
+            margin: 0; /* Remove default margin from h1 */
+        }
+
+        .content {
+            padding: 30px; /* Add padding around the button */
+            text-align: center; /* Center the button */
+        }
+
+        .upload-button {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            cursor: pointer; /* Indicate it's clickable */
+            background-color: #f0f0f0; /* Light grey background */
+            color: #333; /* Dark text color for button */
+            border: none;
+            border-radius: 5px;
+        }
+
+        .upload-button:hover {
+             background-color: #dcdcdc; /* Slightly darker on hover */
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Individual animal Detections</h1>
+    </header>
+
+    <div class="content">
+        <!-- Although not functional yet, using a form is standard for uploads -->
+        <form>
+             <button type="button" class="upload-button">Upload csv</button>
+             <!-- In a real scenario, you'd have an <input type="file"> here -->
+        </form>
+    </div>
+
+</body>
+</html> 
