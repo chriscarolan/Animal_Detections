@@ -1,5 +1,6 @@
 # Load necessary library
 library(dplyr)
+library(jsonlite) # Add jsonlite for JSON output
 
 # Get command line arguments
 args <- commandArgs(trailingOnly = TRUE)
@@ -30,6 +31,8 @@ FT_Data <- tryCatch({
     stop(paste("Error reading CSV file:", e$message), call. = FALSE)
 })
 
+# --- New: Get initial total records ---
+initial_total_records <- nrow(FT_Data)
 
 # Select relevant columns (adjust if your actual CSV has different columns)
 # It's safer to check if columns exist before selecting/deselecting
@@ -108,5 +111,9 @@ tryCatch({
 })
 
 # --- Output ---
-# Print *only* the final count to standard output (for the backend)
-cat(result_count) 
+# Print results as JSON to standard output
+output_data <- list(
+  filtered_count = result_count,
+  total_records = initial_total_records # Include the total records
+)
+cat(jsonlite::toJSON(output_data, auto_unbox = TRUE)) 

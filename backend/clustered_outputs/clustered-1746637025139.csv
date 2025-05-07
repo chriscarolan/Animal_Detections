@@ -1,0 +1,1 @@
+project_id,deployment_id,image_id,filename,location,is_blank,identified_by,wi_taxon_id,class,order,family,genus,species,common_name,uncertainty,timestamp,number_of_objects,age,sex,animal_recognizable,individual_id,individual_animal_notes,behavior,highlighted,markings,cv_confidence,license,bounding_boxes,cluster_id_local

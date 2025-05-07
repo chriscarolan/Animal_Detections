@@ -185,6 +185,45 @@
         /* Optional: Add class via JS for success message styling */
         /* #statusArea.success { color: var(--success-color); } */
 
+        .form-group {
+            margin-bottom: 20px;
+            width: 100%;
+            text-align: left; /* Align labels to the left */
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .form-group select,
+        .form-group input[type="file"],
+        .form-group input[type="number"] { /* Added number type for consistency */
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            background-color: #fff;
+            font-size: 1rem;
+            color: var(--text-color);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .form-group select:focus,
+        .form-group input[type="file"]:focus,
+        .form-group input[type="number"]:focus {
+             border-color: var(--primary-accent);
+             box-shadow: 0 0 0 3px rgba(32, 201, 151, 0.2);
+             outline: none;
+        }
+        
+        /* Specific style for the new EPS dropdown container */
+        /* #epsContainer {
+            display: none;
+        } */
+
     </style>
 </head>
 <body>
@@ -196,33 +235,39 @@
     <div class="content">
         <!-- Wrap form elements in the new container -->
         <div class="form-container">
-            <form id="uploadForm" style="width: 100%; display: contents;"> <!-- Use display:contents to avoid extra div layer affecting flex gap -->
-                <label for="csvFileInput" class="upload-button-label">Upload CSV File</label>
-                <input type="file" id="csvFileInput" name="csvFile" accept=".csv" required>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="csvFile">Upload CSV File:</label>
+                    <input type="file" id="csvFile" name="csvFile" accept=".csv" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="actionSelect">Select Action:</label>
+                    <select id="actionSelect">
+                        <option value="">--Select an Action--</option>
+                        <option value="filter">Filter by Time Interval</option>
+                        <option value="cluster">Cluster Data (DBSCAN)</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="filterMinutesContainer">
+                    <label for="filterMinutesInput">Filter Interval (minutes):</label>
+                    <input type="number" id="filterMinutesInput" value="30" min="1">
+                </div>
+
+                <button type="submit" id="runModelButton" class="button" disabled>Run Model</button>
             </form>
 
             <div id="fileNameDisplay">No file selected</div>
-
-            <select id="modelActionSelect" required>
-                <option value="" disabled selected>-- Select Action --</option>
-                <option value="filter">Filter Data</option>
-                <option value="cluster">Cluster Data (Not Implemented)</option>
-            </select>
-
-            <div id="filterMinutesContainer">
-                <label for="filterMinutesInput">Filter Interval (min):</label>
-                <input type="number" id="filterMinutesInput" name="filterMinutes" min="1" step="1" placeholder="e.g., 30">
-            </div>
-
-            <button type="button" id="runModelButton" disabled>Run Model</button>
 
             <div id="statusArea"></div>
         </div>
     </div>
 
     <script>
-        const fileInput = document.getElementById('csvFileInput');
-        const actionSelect = document.getElementById('modelActionSelect');
+        const form = document.getElementById('uploadForm');
+        const fileInput = document.getElementById('csvFile');
+        const actionSelect = document.getElementById('actionSelect');
         const runButton = document.getElementById('runModelButton');
         const fileNameDisplay = document.getElementById('fileNameDisplay');
         const statusArea = document.getElementById('statusArea');
@@ -230,20 +275,9 @@
         const filterMinutesInput = document.getElementById('filterMinutesInput');
 
         function checkEnableButton() {
-            const fileSelected = fileInput.files.length > 0;
-            const actionSelectedValue = actionSelect.value;
-            let minutesValid = true;
-
-            if (actionSelectedValue === 'filter') {
-                const minutesValue = parseInt(filterMinutesInput.value, 10);
-                minutesValid = !isNaN(minutesValue) && minutesValue > 0;
-            }
-
-            if (fileSelected && actionSelectedValue !== "" && minutesValid) {
-                runButton.disabled = false;
-            } else {
-                runButton.disabled = true;
-            }
+            const fileChosen = fileInput.files.length > 0;
+            const actionChosen = actionSelect.value !== "";
+            runButton.disabled = !(fileChosen && actionChosen);
         }
 
         fileInput.addEventListener('change', () => {
@@ -256,46 +290,33 @@
             checkEnableButton();
         });
 
-        actionSelect.addEventListener('change', () => {
-             statusArea.textContent = '';
-             if (actionSelect.value === 'filter') {
-                 filterMinutesContainer.classList.add('visible');
-             } else {
-                 filterMinutesContainer.classList.remove('visible');
-                 filterMinutesInput.value = '';
-             }
-             checkEnableButton();
+        actionSelect.addEventListener('change', function() {
+            if (this.value === 'filter') {
+                filterMinutesContainer.style.display = 'block';
+            } else if (this.value === 'cluster') {
+                filterMinutesContainer.style.display = 'none';
+            } else {
+                filterMinutesContainer.style.display = 'none';
+            }
+            checkEnableButton();
         });
 
         filterMinutesInput.addEventListener('input', () => {
             checkEnableButton();
         });
 
-        runButton.addEventListener('click', () => {
-            if (runButton.disabled) return;
-
-            const selectedAction = actionSelect.value;
-            const file = fileInput.files[0];
-            const filterMinutes = filterMinutesInput.value;
-
-            if (!file || !selectedAction) {
-                statusArea.textContent = 'Error: File or action not selected.';
-                return;
-            }
-            if (selectedAction === 'filter' && (!filterMinutes || parseInt(filterMinutes, 10) <= 0)) {
-                 statusArea.textContent = 'Error: Please enter a valid positive number for filter minutes.';
-                 return;
-            }
-
-            statusArea.textContent = 'Uploading and processing...';
-            statusArea.style.color = 'var(--secondary-accent)'; // Use neutral color for processing
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+            statusArea.textContent = 'Processing... please wait.';
+            statusArea.style.color = 'var(--text-color)';
             runButton.disabled = true;
 
             const formData = new FormData();
-            formData.append('csvFile', file);
-            formData.append('action', selectedAction);
-            if (selectedAction === 'filter') {
-                formData.append('filterMinutes', filterMinutes);
+            formData.append('csvFile', fileInput.files[0]);
+            formData.append('action', actionSelect.value);
+
+            if (actionSelect.value === 'filter') {
+                formData.append('filterMinutes', filterMinutesInput.value);
             }
 
             fetch('/run-model', {
@@ -304,26 +325,40 @@
             })
             .then(response => {
                 if (!response.ok) {
-                    // Try to parse error JSON, otherwise use status text
-                    return response.json()
-                        .then(errData => { throw new Error(errData.error || `Server error: ${response.statusText}`); })
+                    return response.json().then(errData => { throw new Error(errData.error || `Server error: ${response.statusText}`); })
                         .catch(() => { throw new Error(`Server error: ${response.statusText}`); });
                 }
                 return response.json();
             })
             .then(data => {
                 console.log('Received from backend:', data);
-                let resultsUrl = `results.html?count=${data.count}&method=${encodeURIComponent(data.method)}`;
-                if (data.fileId) {
-                    resultsUrl += `&fileId=${encodeURIComponent(data.fileId)}`;
+                let resultsUrl = 'results.html?';
+                let params = new URLSearchParams();
+
+                params.append('method', data.method);
+
+                if (data.count !== undefined) {
+                    params.append('count', data.count);
+                    if (data.totalRecords !== undefined) {
+                        params.append('totalRecords', data.totalRecords);
+                    }
+                    if (data.fileId) {
+                        params.append('fileId', data.fileId);
+                    }
+                } else if (data.resultsId) {
+                    params.append('resultsId', data.resultsId);
+                    if (data.fileId) {
+                        params.append('fileId', data.fileId);
+                    }
                 }
+
+                resultsUrl += params.toString();
                 window.location.href = resultsUrl;
-                // No need to re-enable button or clear status on success redirect
             })
             .catch(error => {
                 console.error('Error processing file via backend:', error);
                 statusArea.textContent = `Error: ${error.message}`;
-                statusArea.style.color = 'var(--error-color)'; // Ensure error color
+                statusArea.style.color = 'var(--error-color)';
                 runButton.disabled = false;
             });
         });
