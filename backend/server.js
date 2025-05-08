@@ -45,7 +45,8 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage }).fields([
     { name: 'csvFile', maxCount: 1 },
     { name: 'action', maxCount: 1 },
-    { name: 'filterMinutes', maxCount: 1 } // filterMinutes is expected
+    { name: 'filterMinutes', maxCount: 1 },
+    { name: 'epsLevel', maxCount: 1 } // Add epsLevel here
 ]);
 
 // --- Middleware ---
@@ -78,44 +79,58 @@ app.post('/run-model', (req, res) => {
             methodName = 'Time-based filtering';
             scriptPath = path.join(__dirname, 'filter_script.R');
             outputDir = filteredOutputDir;
-            const filterMinutes = req.body.filterMinutes || '30'; // Default to 30 if not provided
+            const filterMinutes = req.body.filterMinutes || '30';
             
-            // Validate filterMinutes
             if (!filterMinutes || isNaN(parseInt(filterMinutes)) || parseInt(filterMinutes) < 1) {
                 fs.unlink(inputFilePath, (delErr) => { if (delErr) console.error("Error deleting temp input file (invalid filterMinutes):", delErr); });
                 return res.status(400).json({ error: 'Invalid Filter Minutes value provided. Must be a number greater than 0.' });
             }
 
             outputFileNamePrefix = `filtered-${filterMinutes}min-`;
-            // Ensure args has three elements for the R script: input, output_placeholder, filterMinutes
             args = [inputFilePath, 'PLACEHOLDER_FOR_OUTPUT_FILE', filterMinutes]; 
-            // The 'PLACEHOLDER_FOR_OUTPUT_FILE' will be replaced by the actual outputFilePath later
         } else if (action === 'cluster') {
             methodName = 'DBSCAN clustering';
             scriptPath = path.join(__dirname, 'dbscan_script.py');
             outputDir = clusteredOutputDir;
             outputFileNamePrefix = 'clustered-';
-            // Python script expects: input_file, output_file
-            args = [inputFilePath, 'PLACEHOLDER_FOR_OUTPUT_FILE']; 
+
+            const epsLevel = req.body.epsLevel || 'medium'; // Default to medium if not provided
+            let epsValue;
+            switch (epsLevel.toLowerCase()) {
+                case 'low':
+                    epsValue = 0.1;
+                    break;
+                case 'medium':
+                    epsValue = 10;
+                    break;
+                case 'high':
+                    epsValue = 60;
+                    break;
+                case 'extreme':
+                    epsValue = 200;
+                    break;
+                default:
+                    console.warn(`Invalid epsLevel '${epsLevel}' received, defaulting to 10.`);
+                    epsValue = 10; // Default EPS
+            }
+            // Python script expects: input_file, output_file, eps_value
+            args = [inputFilePath, 'PLACEHOLDER_FOR_OUTPUT_FILE', epsValue.toString()]; 
         } else {
             fs.unlink(inputFilePath, (delErr) => { if (delErr) console.error("Error deleting temp input file (unknown action):", delErr); });
             return res.status(400).json({ error: 'Invalid action specified.' });
         }
 
-        // Create unique suffix for output file
         const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E5)}`;
         const outputFileName = `${outputFileNamePrefix}${uniqueSuffix}.csv`;
         const outputFilePath = path.join(outputDir, outputFileName);
         
-        // Now, correctly set the output file path in the args array
-        // For filter, it's the second argument (index 1)
-        // For cluster, it's also the second argument (index 1)
         args[1] = outputFilePath;
 
         const command = action === 'filter' ? (process.env.RSCRIPT_PATH || 'Rscript') : (process.env.PYTHON_PATH || 'python');
-        const scriptArgs = [scriptPath, ...args];
+        // For Python, scriptArgs will now be [scriptPath, inputFilePath, outputFilePath, epsValueString]
+        const scriptArgs = [scriptPath, ...args]; 
 
-        console.log(`Executing: "${command}" "${scriptArgs.join('" "')}"`); // Log the exact command
+        console.log(`Executing: "${command}" "${scriptArgs.join('" "')}"`);
 
         execFile(command, scriptArgs, (error, stdout, stderr) => {
             fs.unlink(inputFilePath, (err) => { if (err) console.error("Error deleting temp input file after script execution:", err); });

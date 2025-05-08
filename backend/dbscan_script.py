@@ -31,7 +31,7 @@ def create_site_column(df):
     return df
 
 # Modified to include group_key_for_debug for targeted print statements
-def run_dbscan_on_location(df_group, group_key_for_debug="UNKNOWN_GROUP", min_samples_val=1):
+def run_dbscan_on_location(df_group, eps_to_use, group_key_for_debug="UNKNOWN_GROUP", min_samples_val=1):
     print(f"\n--- Debugging Group: {group_key_for_debug} ---", file=sys.stderr)
     print(f"Initial group shape: {df_group.shape}", file=sys.stderr)
     print(f"DEBUG: Columns in df_group at entry of run_dbscan_on_location: {df_group.columns.tolist()}", file=sys.stderr)
@@ -81,8 +81,8 @@ def run_dbscan_on_location(df_group, group_key_for_debug="UNKNOWN_GROUP", min_sa
 
     if features_unscaled.shape[0] > 0: # If there are any features to process
         try:
-            # Using eps=10 directly on unscaled features
-            dbscan = DBSCAN(eps=10, min_samples=min_samples_val) 
+            # Using eps=eps_to_use directly on unscaled features
+            dbscan = DBSCAN(eps=eps_to_use, min_samples=min_samples_val) 
             clusters = dbscan.fit_predict(features_unscaled)
             # current_group_df['cluster_id_local'] = clusters # This will be assigned below
         except Exception as e: # Catch any error during DBSCAN
@@ -131,12 +131,39 @@ def run_dbscan_on_location(df_group, group_key_for_debug="UNKNOWN_GROUP", min_sa
 
 # --- Main Script Execution ---
 if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print(json.dumps({"error": "Usage: python dbscan_script.py <input_csv_path> <output_csv_path>"}), file=sys.stderr)
+    # --- Enhanced Debugging for EPS ---
+    print(f"DEBUG PY: Raw sys.argv from Python: {sys.argv}", file=sys.stderr)
+    print(f"DEBUG PY: Length of sys.argv: {len(sys.argv)}", file=sys.stderr)
+    # --- End Enhanced Debugging ---
+
+    if len(sys.argv) < 3: # Expecting script_name, input_file, output_file, [eps_value]
+        print(json.dumps({"error": "Usage: python dbscan_script.py <input_file> <output_file> [eps_value]"}), file=sys.stderr)
         sys.exit(1)
 
     input_file = sys.argv[1]
     output_file = sys.argv[2]
+    
+    DEFAULT_EPS = 10.0 
+    eps_value_arg = DEFAULT_EPS # Initialize with default
+
+    if len(sys.argv) > 3: # If EPS argument is provided (sys.argv[3] should exist)
+        try:
+            print(f"DEBUG PY: Attempting to parse sys.argv[3]: '{sys.argv[3]}' as EPS value.", file=sys.stderr)
+            parsed_eps = float(sys.argv[3])
+            if parsed_eps <= 0:
+                print(f"DEBUG PY: Warning - Parsed EPS value '{parsed_eps}' is not positive. Using default EPS: {DEFAULT_EPS}", file=sys.stderr)
+                eps_value_arg = DEFAULT_EPS
+            else:
+                eps_value_arg = parsed_eps
+                print(f"DEBUG PY: Successfully parsed and using EPS: {eps_value_arg}", file=sys.stderr)
+        except ValueError:
+            print(f"DEBUG PY: Warning - ValueError parsing EPS from '{sys.argv[3]}'. Using default EPS: {DEFAULT_EPS}", file=sys.stderr)
+            eps_value_arg = DEFAULT_EPS # Fallback to default on parsing error
+    else:
+        print(f"DEBUG PY: No explicit EPS argument provided (len(sys.argv) is {len(sys.argv)}). Using default EPS: {DEFAULT_EPS}", file=sys.stderr)
+        # eps_value_arg is already DEFAULT_EPS from initialization
+
+    print(f"PYTHON SCRIPT: Using FINAL EPS value: {eps_value_arg} for processing.", file=sys.stderr)
 
     try:
         df = pd.read_csv(input_file)
@@ -179,7 +206,7 @@ if __name__ == "__main__":
         for group_key_val, group_data_df in df.groupby(grouping_column):
             # Call run_dbscan_on_location and get the processed DataFrame back
             processed_df_group, total_c, inconsistent_c, total_a, inconsistent_d = \
-                run_dbscan_on_location(group_data_df, str(group_key_val))
+                run_dbscan_on_location(group_data_df, eps_value_arg, str(group_key_val))
             
             all_photo_location_stats[str(group_key_val)] = {
                 "total_clusters": total_c,
@@ -197,7 +224,7 @@ if __name__ == "__main__":
     else:
         # Fallback: Process the entire DataFrame as a single group
         processed_df_all, total_c, inconsistent_c, total_a, inconsistent_d = \
-            run_dbscan_on_location(df, "ALL_DATA") # Pass df directly
+            run_dbscan_on_location(df, eps_value_arg, "ALL_DATA") # Pass df directly
         
         all_photo_location_stats["ALL_DATA"] = {
             "total_clusters": total_c,

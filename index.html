@@ -131,13 +131,14 @@
         }
 
         #filterMinutesContainer {
-            display: none;
+            /* display: none; */ /* This is handled by JS by adding/removing 'visible' or setting display directly */
             width: 100%;
-            text-align: center;
-            margin-top: -10px; /* Adjust spacing */
-            margin-bottom: -5px;
+            text-align: center; /* If you want the label and input centered within this div */
+            /* margin-top: 15px; */ /* This adds space above the filter container */
+            /* margin-bottom: -5px; */ /* Removed this, as form-group margin-bottom should handle it */
         }
-        #filterMinutesContainer.visible { display: block; }
+        #filterMinutesContainer.visible { display: block; } /* Or use inline style if preferred */
+        #filterMinutesContainer:not(.visible) { display: none; } /* Ensure it's hidden if not visible */
 
         #filterMinutesContainer label {
             margin-right: 10px;
@@ -156,6 +157,29 @@
              box-shadow: 0 0 0 3px rgba(32, 201, 151, 0.2);
              outline: none;
         }
+
+        /* New styles for EPS Level dropdown */
+        #epsLevelContainer {
+            /* display: none; */ /* Handled by JS */
+            width: 100%;
+            text-align: center; /* If you want label and input centered */
+        }
+        #epsLevelContainer.visible { display: block; }
+        #epsLevelContainer:not(.visible) { display: none; }
+
+
+        #epsLevelContainer label {
+            margin-right: 10px;
+            font-size: 0.95em;
+            color: var(--secondary-accent);
+        }
+
+        #epsLevelSelect {
+            width: auto; /* Adjust width as needed, or make it 100% of its form-group */
+            display: inline-block;
+            padding: 10px 12px;
+        }
+        /* End of new styles for EPS Level dropdown */
 
         #runModelButton {
             background-color: var(--primary-accent);
@@ -186,7 +210,7 @@
         /* #statusArea.success { color: var(--success-color); } */
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 20px; /* This should provide spacing between form groups */
             width: 100%;
             text-align: left; /* Align labels to the left */
         }
@@ -255,6 +279,18 @@
                     <input type="number" id="filterMinutesInput" value="30" min="1">
                 </div>
 
+                <!-- New EPS Level Dropdown -->
+                <div class="form-group" id="epsLevelContainer">
+                    <label for="epsLevelSelect">Select EPS Level:</label>
+                    <select id="epsLevelSelect">
+                        <option value="medium">Medium (eps=10)</option> <!-- Default to medium -->
+                        <option value="low">Low (eps=0.1)</option>
+                        <option value="high">High (eps=60)</option>
+                        <option value="extreme">Extreme (eps=200)</option>
+                    </select>
+                </div>
+                <!-- End of New EPS Level Dropdown -->
+
                 <button type="submit" id="runModelButton" class="button" disabled>Run Model</button>
             </form>
 
@@ -273,6 +309,8 @@
         const statusArea = document.getElementById('statusArea');
         const filterMinutesContainer = document.getElementById('filterMinutesContainer');
         const filterMinutesInput = document.getElementById('filterMinutesInput');
+        const epsLevelContainer = document.getElementById('epsLevelContainer');
+        const epsLevelSelect = document.getElementById('epsLevelSelect');
 
         function checkEnableButton() {
             const fileChosen = fileInput.files.length > 0;
@@ -293,15 +331,22 @@
         actionSelect.addEventListener('change', function() {
             if (this.value === 'filter') {
                 filterMinutesContainer.style.display = 'block';
+                epsLevelContainer.style.display = 'none'; // Hide EPS level
             } else if (this.value === 'cluster') {
-                filterMinutesContainer.style.display = 'none';
+                filterMinutesContainer.style.display = 'none'; // Hide filter minutes
+                epsLevelContainer.style.display = 'block'; // Show EPS level
             } else {
                 filterMinutesContainer.style.display = 'none';
+                epsLevelContainer.style.display = 'none';
             }
             checkEnableButton();
         });
 
         filterMinutesInput.addEventListener('input', () => {
+            checkEnableButton();
+        });
+
+        epsLevelSelect.addEventListener('change', () => {
             checkEnableButton();
         });
 
@@ -317,6 +362,8 @@
 
             if (actionSelect.value === 'filter') {
                 formData.append('filterMinutes', filterMinutesInput.value);
+            } else if (actionSelect.value === 'cluster') {
+                formData.append('epsLevel', epsLevelSelect.value);
             }
 
             fetch('/run-model', {
