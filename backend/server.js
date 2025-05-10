@@ -4,6 +4,7 @@ const { execFile } = require('child_process'); // Use execFile for better securi
 const path = require('path');
 const fs = require('fs'); // File system module
 const crypto = require('crypto'); // For generating unique IDs
+const { spawn } = require('child_process'); // Added for spawn method
 
 const app = express();
 const port = 3000; // Port the server will listen on
@@ -16,38 +17,58 @@ const RESULT_EXPIRY_TIME = 15 * 60 * 1000; // 15 minutes in milliseconds
 
 // --- File Upload Setup (using Multer) ---
 // Configure where to store uploaded files temporarily
-const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)){
-    fs.mkdirSync(uploadDir); // Create 'uploads' directory if it doesn't exist
+const baseUploadDir = path.join(__dirname, 'uploads'); // Base for all uploads
+if (!fs.existsSync(baseUploadDir)){
+    fs.mkdirSync(baseUploadDir, { recursive: true });
 }
-// --- New: Directory for Filtered Outputs ---
 const filteredOutputDir = path.join(__dirname, 'filtered_outputs');
 if (!fs.existsSync(filteredOutputDir)){
-    fs.mkdirSync(filteredOutputDir); // Create directory for results
+    fs.mkdirSync(filteredOutputDir, { recursive: true });
 }
-// New: Directory for Clustered Outputs
 const clusteredOutputDir = path.join(__dirname, 'clustered_outputs');
 if (!fs.existsSync(clusteredOutputDir)){
-    fs.mkdirSync(clusteredOutputDir); // Create directory for clustered outputs
+    fs.mkdirSync(clusteredOutputDir, { recursive: true });
+}
+
+// Configure Multer for dynamic fields
+// const multerFields = [ // We'll define this inline for the test
+//     { name: 'csvFile', maxCount: 1 },
+//     { name: 'photoN01_files', maxCount: 200 },
+//     { name: 'photoN02_files', maxCount: 200 },
+//     { name: 'photoN03_files', maxCount: 200 },
+//     { name: 'photoT01_files', maxCount: 200 },
+//     { name: 'photoT02_files', maxCount: 200 },
+//     { name: 'photoT03_files', maxCount: 200 }
+// ];
+
+// console.log("SERVER.JS: Initializing Multer with these fields:", JSON.stringify(multerFields, null, 2)); // No longer using the variable here
+
+// Temporary storage for multer before organizing
+const tempMulterUploads = path.join(baseUploadDir, 'temp_multer');
+if (!fs.existsSync(tempMulterUploads)) {
+    fs.mkdirSync(tempMulterUploads, { recursive: true });
 }
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, uploadDir); // Save to 'uploads' directory
+        cb(null, tempMulterUploads);
     },
     filename: function (req, file, cb) {
-        // Create a unique filename to avoid conflicts
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+        // Use file.originalname to preserve the name from the uploaded folder structure
+        cb(null, file.fieldname + '-' + uniqueSuffix + '-' + file.originalname.replace(/[^a-zA-Z0-9_.-]/g, '_'));
     }
 });
 
-// Configure Multer to handle form-data
-const upload = multer({ storage: storage }).fields([
-    { name: 'csvFile', maxCount: 1 },
-    { name: 'action', maxCount: 1 },
-    { name: 'filterMinutes', maxCount: 1 },
-    { name: 'epsLevel', maxCount: 1 } // Add epsLevel here
-]);
+// --- Use .any() for more robust handling of large mixed uploads ---
+const upload = multer({
+    storage: storage,
+    limits: { 
+        files: 1500, 
+        fileSize: 1024 * 1024 * 200 // 200MB per file
+    }
+}).any(); // Use .any()
+console.log("SERVER.JS: Multer is using .any() to handle all incoming files.");
+// --- END ---
 
 // --- Middleware ---
 // Serve static files (HTML, CSS, JS) from the parent directory
@@ -55,163 +76,299 @@ app.use(express.static(path.join(__dirname, '..'))); // Serve files from 'animal
 
 // --- API Endpoint ---
 app.post('/run-model', (req, res) => {
-    upload(req, res, function (err) {
-        if (err instanceof multer.MulterError) {
-            console.error("Multer error:", err);
-            return res.status(500).json({ error: "File upload error: " + err.message });
-        } else if (err) {
-            console.error("Unknown upload error:", err);
-            return res.status(500).json({ error: "An unknown error occurred during file upload." });
+    console.log("SERVER.JS: /run-model route hit. Request Headers:", JSON.stringify(req.headers, null, 2));
+    console.log("SERVER.JS: Attempting to process upload with .any().");
+
+    upload(req, res, async function (err) {
+        if (err) {
+            console.log("SERVER.JS: Multer callback - ERROR received (with .any()):", err);
+            console.error("Full error object during upload processing (Multer stage, .any()):", err);
+            // err.code will be set for MulterErrors (e.g., 'LIMIT_FILE_SIZE')
+            if (err instanceof multer.MulterError) {
+                return res.status(400).json({ error: "File upload error: " + err.message + (err.field ? ` (field: ${err.field})` : '') });
+            }
+            return res.status(500).json({ error: "An unexpected error occurred during initial file upload parsing." });
         }
 
-        if (!req.files || !req.files.csvFile || !req.files.csvFile[0]) {
-            return res.status(400).json({ error: 'No CSV file uploaded.' });
+        // With .any(), req.files is an ARRAY of all files.
+        // req.body will contain non-file fields.
+        console.log("SERVER.JS: Multer callback (.any()) - NO immediate error.");
+        console.log("SERVER.JS: Multer callback (.any()) - req.files (array):", req.files ? req.files.map(f => ({ fieldname: f.fieldname, originalname: f.originalname, size: f.size, path: f.path })) : "No files");
+        console.log("SERVER.JS: Multer callback (.any()) - req.body:", req.body);
+
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ error: 'No files uploaded.' });
         }
-        if (!req.body.action) {
-            return res.status(400).json({ error: 'No action specified.' });
+
+        // Find the CSV file
+        const csvFileObject = req.files.find(file => file.fieldname === 'csvFile');
+        if (!csvFileObject) {
+            // Cleanup any files already uploaded by .any() if CSV is missing
+            req.files.forEach(file => {
+                if (file.path && fs.existsSync(file.path)) {
+                    fs.unlink(file.path, delErr => { if(delErr) console.error(`Error deleting temp file ${file.path} after missing CSV:`, delErr);});
+                }
+            });
+            return res.status(400).json({ error: 'No CSV file uploaded or it was not named "csvFile".' });
         }
+        const inputCsvPath = csvFileObject.path;
+        console.log(`SERVER.JS: CSV file found: ${inputCsvPath}`);
 
         const action = req.body.action;
-        const inputFilePath = req.files.csvFile[0].path;
-        let scriptPath, outputDir, outputFileNamePrefix, args, methodName;
+        let scriptPath, outputDir, outputFileNamePrefix, args, methodName, outputFilePath;
+        let photoLocationPaths = {};
 
-        if (action === 'filter') {
+        const runId = `run_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+        const runSpecificUploadDir = path.join(baseUploadDir, runId);
+
+        if (action === 'cluster') {
+            console.log("SERVER.JS: Action is 'cluster'. Preparing photo directories (processing .any() results).");
+            try {
+                if (!fs.existsSync(runSpecificUploadDir)) {
+                    fs.mkdirSync(runSpecificUploadDir, { recursive: true });
+                }
+
+                const locationPhotoFieldsMap = {
+                    'photoN01_files': 'N01',
+                    'photoN02_files': 'N02',
+                    'photoN03_files': 'N03',
+                    'photoT01_files': 'T01',
+                    'photoT02_files': 'T02',
+                    'photoT03_files': 'T03'
+                };
+                // photoLocationPaths was defined outside, reset it here for current request
+                photoLocationPaths = {};
+
+                const photoFiles = req.files.filter(file => file.fieldname !== 'csvFile');
+
+                photoFiles.forEach(file => {
+                    const locationCode = locationPhotoFieldsMap[file.fieldname];
+                    if (locationCode) {
+                        const targetDir = path.join(runSpecificUploadDir, locationCode);
+                        if (!photoLocationPaths[locationCode]) {
+                            fs.mkdirSync(targetDir, { recursive: true });
+                            photoLocationPaths[locationCode] = targetDir;
+                        }
+                        const newFilePath = path.join(targetDir, file.originalname);
+                        // console.log(`SERVER.JS: Processing photo for field ${file.fieldname} (location ${locationCode}). File: ${file.originalname}`);
+                        // console.log(`SERVER.JS: Attempting to move ${file.path} to ${newFilePath}`);
+                        try {
+                            fs.renameSync(file.path, newFilePath);
+                            // console.log(`SERVER.JS: Successfully moved ${file.originalname} to ${newFilePath}`);
+                        } catch (moveError) {
+                            console.error(`SERVER.JS_ERROR: Failed to move ${file.originalname} from ${file.path} to ${newFilePath}`, moveError);
+                            if (fs.existsSync(file.path)) {
+                                fs.unlinkSync(file.path);
+                            }
+                        }
+                    } else {
+                        // console.warn(`SERVER.JS: File with unmapped fieldname ${file.fieldname} found: ${file.originalname}. Deleting from temp.`);
+                         if (file.path && fs.existsSync(file.path)) {
+                            fs.unlinkSync(file.path);
+                        }
+                    }
+                });
+                console.log("SERVER.JS: Finished processing photo files. photoLocationPaths:", photoLocationPaths);
+
+            } catch (dirOrFileError) {
+                console.error("SERVER.JS: CRITICAL ERROR during photo directory setup or file processing loop:", dirOrFileError);
+                req.files.forEach(file => {
+                    if (file.path && fs.existsSync(file.path)) {
+                        try { fs.unlinkSync(file.path); } catch (e) { console.error('Error deleting temp file on dir error:', e); }
+                    }
+                });
+                return res.status(500).json({ error: 'Error setting up directories for photo processing.' });
+            }
+
+            // --- Setup for dbscan_script.py ---
+            scriptPath = path.join(__dirname, 'dbscan_script.py');
+            outputDir = clusteredOutputDir;
+            outputFileNamePrefix = 'clustered';
+            methodName = 'DBSCAN Clustering';
+
+            const epsValue = req.body.epsLevel === 'low' ? "0.5" : 
+                             req.body.epsLevel === 'high' ? "20" : "10"; // Default to medium (10)
+
+            const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E5)}`;
+            const outputFileName = `${outputFileNamePrefix}-${uniqueSuffix}.csv`; // Generate unique name
+            outputFilePath = path.join(outputDir, outputFileName);
+            const photoLocationPathsJson = JSON.stringify(photoLocationPaths);
+
+            // Ensure inputCsvPath is defined and used correctly from the multer processing step
+            // It should have been set earlier in the /run-model handler
+            if (!inputCsvPath || !fs.existsSync(inputCsvPath)) {
+                console.error("SERVER.JS_ERROR: inputCsvPath is not defined or file does not exist for clustering.");
+                // Clean up temporary files if any were created for this failed request
+                if (req.files && req.files.length > 0) {
+                    req.files.forEach(file => {
+                        if (file.path && fs.existsSync(file.path)) {
+                            try { fs.unlinkSync(file.path); } catch (e) { console.error('Error deleting temp file on inputCsvPath error:', e); }
+                        }
+                    });
+                }
+                // Also clean up runSpecificUploadDir if it was created and is empty
+                if (fs.existsSync(runSpecificUploadDir) && fs.readdirSync(runSpecificUploadDir).length === 0) {
+                    try { fs.rmdirSync(runSpecificUploadDir); } catch(e) { console.error('Error deleting empty runSpecificUploadDir:', e); }
+                }
+                return res.status(500).json({ error: 'Critical error: Input CSV path not available for clustering.' });
+            }
+
+            args = [
+                inputCsvPath,       // Correct: Path to the uploaded CSV
+                outputFilePath,     // Correct: Path for the output clustered CSV
+                epsValue,           // Correct: EPS value
+                photoLocationPathsJson // Correct: JSON string of photo paths map
+            ];
+            
+            // The command is 'python', scriptPath is the first argument to python
+            executable = 'python'; 
+            // Prepend scriptPath to args for execFile if using it directly,
+            // or ensure it's the first element after 'python' if using spawn's array style.
+            // For spawn, the scriptPath is the first element of the second argument (the array of args).
+            // So, the args array for spawn should be: [scriptPath, inputCsvPath, outputFilePath, ...]
+
+            // Corrected for spawn:
+            const spawnArgs = [
+                scriptPath,
+                inputCsvPath,
+                outputFilePath,
+                epsValue,
+                photoLocationPathsJson
+            ];
+
+            console.log(`Executing: "${executable}" "${spawnArgs.join('" "')}"`); // For logging
+
+            // --- End of setup for dbscan_script.py ---
+            scriptToRun = spawn(executable, spawnArgs);
+
+        } else if (action === 'filter') {
             methodName = 'Time-based filtering';
             scriptPath = path.join(__dirname, 'filter_script.R');
             outputDir = filteredOutputDir;
             const filterMinutes = req.body.filterMinutes || '30';
             
             if (!filterMinutes || isNaN(parseInt(filterMinutes)) || parseInt(filterMinutes) < 1) {
-                fs.unlink(inputFilePath, (delErr) => { if (delErr) console.error("Error deleting temp input file (invalid filterMinutes):", delErr); });
+                fs.unlink(inputCsvPath, (delErr) => { if (delErr) console.error("Error deleting temp input file (invalid filterMinutes):", delErr); });
                 return res.status(400).json({ error: 'Invalid Filter Minutes value provided. Must be a number greater than 0.' });
             }
 
             outputFileNamePrefix = `filtered-${filterMinutes}min-`;
-            args = [inputFilePath, 'PLACEHOLDER_FOR_OUTPUT_FILE', filterMinutes]; 
-        } else if (action === 'cluster') {
-            methodName = 'DBSCAN clustering';
-            scriptPath = path.join(__dirname, 'dbscan_script.py');
-            outputDir = clusteredOutputDir;
-            outputFileNamePrefix = 'clustered-';
-
-            const epsLevel = req.body.epsLevel || 'medium'; // Default to medium if not provided
-            let epsValue;
-            switch (epsLevel.toLowerCase()) {
-                case 'low':
-                    epsValue = 0.1;
-                    break;
-                case 'medium':
-                    epsValue = 10;
-                    break;
-                case 'high':
-                    epsValue = 60;
-                    break;
-                case 'extreme':
-                    epsValue = 200;
-                    break;
-                default:
-                    console.warn(`Invalid epsLevel '${epsLevel}' received, defaulting to 10.`);
-                    epsValue = 10; // Default EPS
-            }
-            // Python script expects: input_file, output_file, eps_value
-            args = [inputFilePath, 'PLACEHOLDER_FOR_OUTPUT_FILE', epsValue.toString()]; 
+            args = [inputCsvPath, 'PLACEHOLDER_FOR_OUTPUT_FILE', filterMinutes];
         } else {
-            fs.unlink(inputFilePath, (delErr) => { if (delErr) console.error("Error deleting temp input file (unknown action):", delErr); });
+            fs.unlink(inputCsvPath, (delErr) => { if (delErr) console.error("Error deleting temp input file (unknown action):", delErr); });
+            if (Object.keys(photoLocationPaths).length > 0) { // Cleanup runSpecificUploadDir if created
+                 fs.rm(runSpecificUploadDir, { recursive: true, force: true }, (rmErr) => {
+                    if (rmErr) console.error(`Error cleaning up ${runSpecificUploadDir}:`, rmErr);
+                });
+            }
             return res.status(400).json({ error: 'Invalid action specified.' });
         }
 
         const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E5)}`;
         const outputFileName = `${outputFileNamePrefix}${uniqueSuffix}.csv`;
-        const outputFilePath = path.join(outputDir, outputFileName);
+        outputFilePath = path.join(outputDir, outputFileName);
         
-        args[1] = outputFilePath;
+        args[1] = outputFilePath; // Set the actual output file path
 
         const command = action === 'filter' ? (process.env.RSCRIPT_PATH || 'Rscript') : (process.env.PYTHON_PATH || 'python');
-        // For Python, scriptArgs will now be [scriptPath, inputFilePath, outputFilePath, epsValueString]
-        const scriptArgs = [scriptPath, ...args]; 
+        const scriptArgs = [scriptPath, ...args];
 
         console.log(`Executing: "${command}" "${scriptArgs.join('" "')}"`);
 
-        execFile(command, scriptArgs, (error, stdout, stderr) => {
-            fs.unlink(inputFilePath, (err) => { if (err) console.error("Error deleting temp input file after script execution:", err); });
+        const pythonProcess = spawn(command, scriptArgs); // Ensure 'python' is correct
 
-            if (error) {
-                console.error(`Script execution error for ${action}:`, error);
-                console.error(`Script stderr for ${action}:`, stderr);
+        let scriptStdout = '';
+        let scriptStderr = '';
 
-                if (outputFilePath && fs.existsSync(outputFilePath)) {
-                   fs.unlink(outputFilePath, (delErr) => { if (delErr) console.error(`Error deleting temp output file ${outputFilePath} after script error:`, delErr); });
-                }
+        console.log(`SERVER.JS: Spawning Python script: ${scriptArgs.join(' ')}`);
 
-                // Construct a more controlled error message for the client
-                let clientErrorMessage = `Script execution failed.`;
-                if (error.code) {
-                    clientErrorMessage += ` Exit code: ${error.code}.`;
-                }
-                // Add a snippet of stderr if it exists, otherwise use the error.message from execFile
-                if (stderr && stderr.trim().length > 0) {
-                    clientErrorMessage += ` Details: ${stderr.trim().substring(0, 500)}`; // Send first 500 chars of stderr
-                } else if (error.message) {
-                    clientErrorMessage += ` Message: ${error.message}`;
-                }
-                // The full details are in the Node.js console.
-                return res.status(500).json({ error: clientErrorMessage });
+        pythonProcess.stdout.on('data', (data) => {
+            const dataStr = data.toString();
+            scriptStdout += dataStr;
+            // Log the raw chunks to see if anything comes through at all
+            console.log(`PYTHON_STDOUT_CHUNK: ${dataStr}`);
+        });
+
+        pythonProcess.stderr.on('data', (data) => {
+            const dataStr = data.toString();
+            scriptStderr += dataStr;
+            // Log the raw chunks
+            console.error(`PYTHON_STDERR_CHUNK: ${dataStr}`);
+        });
+
+        pythonProcess.on('error', (err) => {
+            // This event is emitted if the process could not be spawned,
+            // or could not be killed, or sending a message to the child process failed.
+            console.error('SERVER.JS_ERROR: Failed to start or interact with Python subprocess.', err);
+            // Make sure to send an error response to the client
+            if (!res.headersSent) {
+                res.status(500).json({ error: 'Failed to start Python script.', details: err.message });
             }
+        });
 
-            if (stderr) { // Python might print warnings to stderr but still succeed (exit code 0)
-                console.warn(`Script stderr (warnings) for ${action}:`, stderr);
-            }
+        pythonProcess.on('close', (code, signal) => {
+            console.log(`SERVER.JS: Python script process closed with code ${code} and signal ${signal}`);
+            console.log("SERVER.JS: --- Full Python stdout ---");
+            console.log(scriptStdout);
+            console.log("SERVER.JS: --- Full Python stderr ---");
+            console.error(scriptStderr);
 
-            console.log(`Script stdout for ${action}:`, stdout);
-
-            if (action === 'filter') {
-                try {
-                    const rOutput = JSON.parse(stdout); // Parse JSON from R
-                    const filteredCount = parseInt(rOutput.filtered_count, 10);
-                    const totalRecords = parseInt(rOutput.total_records, 10);
-
-                    if (isNaN(filteredCount) || isNaN(totalRecords)) {
-                        if (outputFilePath && fs.existsSync(outputFilePath)) fs.unlink(outputFilePath, (delErr) => { if (delErr) console.error("Error deleting temp output file (filter) due to invalid count:", delErr); });
-                        console.error("R script output was not a valid JSON with numbers:", stdout);
-                        return res.status(500).json({ error: 'R script did not return valid counts.' });
+            if (code !== 0) {
+                console.error(`SERVER.JS_ERROR: Python script exited with error code ${code}.`);
+                if (!res.headersSent) {
+                    try {
+                        const errorJson = JSON.parse(scriptStderr || scriptStdout);
+                        res.status(500).json({ error: 'Python script error', details: errorJson, stderr: scriptStderr, stdout: scriptStdout });
+                    } catch (e) {
+                        res.status(500).json({ error: `Python script failed with code ${code}.`, stderr: scriptStderr, stdout: scriptStdout });
                     }
-                    res.json({
-                        count: filteredCount,
-                        totalRecords: totalRecords, // Pass totalRecords
-                        method: methodName,
-                        fileId: outputFileName
-                    });
-                } catch (parseError) {
-                    console.error("Error parsing R script JSON output:", parseError, "Output was:", stdout);
-                    if (outputFilePath && fs.existsSync(outputFilePath)) fs.unlink(outputFilePath, (delErr) => { if (delErr) console.error("Error deleting temp output file (filter) after R parse error:", delErr); });
-                    return res.status(500).json({ error: 'Failed to parse R script output.' });
                 }
-            } else if (action === 'cluster') {
-                try {
-                    const clusterDetails = JSON.parse(stdout); // This is the large detailed object
-                    const resultsId = crypto.randomBytes(16).toString('hex'); // Generate a unique ID
+            } else { // Python script exited with code 0 (success)
+                if (!res.headersSent) {
+                    // For other scripts (like dbscan_script.py or filter_script.py), expect JSON
+                    try {
+                        const results = JSON.parse(scriptStdout);
+                        let responseJson = { ...results };
 
-                    // Store the results
-                    clusterResultsStore[resultsId] = clusterDetails;
-
-                    // Set a timeout to delete the stored result after expiry time
-                    setTimeout(() => {
-                        delete clusterResultsStore[resultsId];
-                        console.log(`Expired and deleted cluster result: ${resultsId}`);
-                    }, RESULT_EXPIRY_TIME);
-
-                    // Respond with the ID and the fileId for download
-                    res.json({
-                        method: methodName,
-                        resultsId: resultsId, // Send this ID to the client
-                        fileId: outputFileName  // For downloading the CSV
-                    });
-                } catch (parseError) {
-                    console.error("Error parsing Python script JSON output:", parseError, "Output was:", stdout);
-                    // If parsing fails, still try to delete the output file as it might be corrupt/empty
-                    if (outputFilePath && fs.existsSync(outputFilePath)) fs.unlink(outputFilePath, (delErr) => { if (delErr) console.error("Error deleting temp output file (cluster) after parse error:", delErr); });
-                    return res.status(500).json({ error: 'Failed to parse clustering results from script.' });
+                        if (action === 'cluster') {
+                            if (results.clusters && results.output_file) {
+                                const resultsId = crypto.randomBytes(16).toString('hex');
+                                clusterResultsStore[resultsId] = {
+                                    ...results,
+                                    outputCsvPath: outputFilePath, // outputFilePath is defined in the outer scope
+                                    timestamp: Date.now()
+                                };
+                                setTimeout(() => delete clusterResultsStore[resultsId], RESULT_EXPIRY_TIME);
+                                console.log(`SERVER.JS: Stored cluster results with ID: ${resultsId}`);
+                                responseJson.resultsId = resultsId;
+                                responseJson.outputFileName = path.basename(outputFilePath);
+                            } else {
+                                console.error("SERVER.JS_ERROR: Cluster script output valid JSON, but missing expected fields (clusters, output_file).", results);
+                                return res.status(500).json({ error: "Cluster script produced JSON, but content is not as expected.", details: scriptStdout });
+                            }
+                        } else if (action === 'filter') {
+                            if (results.output_file) {
+                                responseJson.outputFileName = path.basename(outputFilePath);
+                            } else {
+                                console.error("SERVER.JS_ERROR: Filter script output valid JSON, but missing expected field (output_file).", results);
+                                return res.status(500).json({ error: "Filter script produced JSON, but content is not as expected.", details: scriptStdout });
+                            }
+                        }
+                        res.json(responseJson);
+                    } catch (e) {
+                        console.error("SERVER.JS_ERROR: Could not parse Python script output as JSON for action:", action, e);
+                        res.status(500).json({ error: "Failed to parse script output as JSON.", details: scriptStdout });
+                    }
                 }
+            }
+            // Cleanup: Delete the run-specific photo directory and the input CSV
+            if (fs.existsSync(runSpecificUploadDir)) {
+                fs.rm(runSpecificUploadDir, { recursive: true, force: true }, (rmErr) => {
+                    if (rmErr) console.error(`Error cleaning up ${runSpecificUploadDir}:`, rmErr);
+                });
+            }
+            if (inputCsvPath && fs.existsSync(inputCsvPath)) {
+                fs.unlink(inputCsvPath, (delErr) => { if (delErr) console.error("Error deleting temp input CSV after script execution:", delErr); });
             }
         });
     });
@@ -289,6 +446,23 @@ app.get('/download-clustered/:fileId', (req, res) => {
         });
     } else {
         res.status(404).send('Clustered file not found.');
+    }
+});
+
+// --- Endpoint to fetch stored cluster results ---
+app.get('/results/:resultsId', (req, res) => {
+    const resultsId = req.params.resultsId;
+    // Log the received ID and the current state of the store for debugging
+    console.log(`SERVER.JS: /results/:resultsId endpoint hit. Requested ID: "${resultsId}"`);
+    console.log(`SERVER.JS: Current clusterResultsStore keys: [${Object.keys(clusterResultsStore).join(', ')}]`);
+    
+    const results = clusterResultsStore[resultsId];
+    if (results) {
+        console.log(`SERVER.JS: Found results for ID: "${resultsId}"`);
+        res.json(results); // Send the full stored JSON data
+    } else {
+        console.warn(`SERVER.JS: Results NOT FOUND for ID: "${resultsId}"`);
+        res.status(404).json({ error: 'Results not found for ID: ' + resultsId });
     }
 });
 

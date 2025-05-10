@@ -181,6 +181,33 @@
         }
         /* End of new styles for EPS Level dropdown */
 
+        /* Styles for the new Photo Uploads Section */
+        #photoUploadsContainer {
+            /* display: none; is handled by JS */
+            margin-top: 15px; /* Add some space above this section */
+            margin-bottom: 15px; /* Add some space below this section before the run button */
+            border: 1px solid var(--border-color); /* Optional: add a light border */
+            padding: 15px;
+            border-radius: var(--border-radius);
+            background-color: var(--container-bg-lighter, #f8f9fa); /* Slightly lighter background */
+        }
+
+        #photoUploadsContainer .form-group {
+            margin-bottom: 15px; /* Spacing between each photo upload input */
+        }
+        #photoUploadsContainer .form-group:last-child {
+            margin-bottom: 0; /* No bottom margin for the last item in this container */
+        }
+
+        #photoUploadsContainer p.section-title {
+            text-align: center;
+            margin-bottom: 15px;
+            font-weight: 600;
+            font-size: 1.05em;
+            color: var(--text-color);
+        }
+        /* End of styles for Photo Uploads Section */
+
         #runModelButton {
             background-color: var(--primary-accent);
             color: white;
@@ -291,6 +318,37 @@
                 </div>
                 <!-- End of New EPS Level Dropdown -->
 
+                <!-- New Photo Uploads Section -->
+                <div id="photoUploadsContainer" style="display: none;">
+                    <p class="section-title">Optional: Upload Photo Folders for Locations</p>
+                    <p class="section-subtitle" style="text-align: center; font-size: 0.85em; margin-top: -10px; margin-bottom: 15px;">(Select a folder for each location; all images within will be uploaded. Browser support varies.)</p>
+                    <div class="form-group">
+                        <label for="photoN01">N01 Photo Folder:</label>
+                        <input type="file" id="photoN01" name="photoN01_files" webkitdirectory directory>
+                    </div>
+                    <div class="form-group">
+                        <label for="photoN02">N02 Photo Folder:</label>
+                        <input type="file" id="photoN02" name="photoN02_files" webkitdirectory directory>
+                    </div>
+                    <div class="form-group">
+                        <label for="photoN03">N03 Photo Folder:</label>
+                        <input type="file" id="photoN03" name="photoN03_files" webkitdirectory directory>
+                    </div>
+                    <div class="form-group">
+                        <label for="photoT01">T01 Photo Folder:</label>
+                        <input type="file" id="photoT01" name="photoT01_files" webkitdirectory directory>
+                    </div>
+                    <div class="form-group">
+                        <label for="photoT02">T02 Photo Folder:</label>
+                        <input type="file" id="photoT02" name="photoT02_files" webkitdirectory directory>
+                    </div>
+                    <div class="form-group">
+                        <label for="photoT03">T03 Photo Folder:</label>
+                        <input type="file" id="photoT03" name="photoT03_files" webkitdirectory directory>
+                    </div>
+                </div>
+                <!-- End of New Photo Uploads Section -->
+
                 <button type="submit" id="runModelButton" class="button" disabled>Run Model</button>
             </form>
 
@@ -311,6 +369,7 @@
         const filterMinutesInput = document.getElementById('filterMinutesInput');
         const epsLevelContainer = document.getElementById('epsLevelContainer');
         const epsLevelSelect = document.getElementById('epsLevelSelect');
+        const photoUploadsContainer = document.getElementById('photoUploadsContainer');
 
         function checkEnableButton() {
             const fileChosen = fileInput.files.length > 0;
@@ -331,13 +390,16 @@
         actionSelect.addEventListener('change', function() {
             if (this.value === 'filter') {
                 filterMinutesContainer.style.display = 'block';
-                epsLevelContainer.style.display = 'none'; // Hide EPS level
+                epsLevelContainer.style.display = 'none';
+                photoUploadsContainer.style.display = 'none'; // Hide photo uploads
             } else if (this.value === 'cluster') {
-                filterMinutesContainer.style.display = 'none'; // Hide filter minutes
-                epsLevelContainer.style.display = 'block'; // Show EPS level
+                filterMinutesContainer.style.display = 'none';
+                epsLevelContainer.style.display = 'block';
+                photoUploadsContainer.style.display = 'block'; // Show photo uploads
             } else {
                 filterMinutesContainer.style.display = 'none';
                 epsLevelContainer.style.display = 'none';
+                photoUploadsContainer.style.display = 'none'; // Hide photo uploads
             }
             checkEnableButton();
         });
@@ -352,9 +414,7 @@
 
         form.addEventListener('submit', function(event) {
             event.preventDefault();
-            statusArea.textContent = 'Processing... please wait.';
-            statusArea.style.color = 'var(--text-color)';
-            runButton.disabled = true;
+            showLoadingIndicator();
 
             const formData = new FormData();
             formData.append('csvFile', fileInput.files[0]);
@@ -364,6 +424,25 @@
                 formData.append('filterMinutes', filterMinutesInput.value);
             } else if (actionSelect.value === 'cluster') {
                 formData.append('epsLevel', epsLevelSelect.value);
+
+                // Append photo files if selected
+                const photoInputs = [
+                    { id: 'photoN01', name: 'photoN01_files' }, // Use distinct names for multer
+                    { id: 'photoN02', name: 'photoN02_files' },
+                    { id: 'photoN03', name: 'photoN03_files' },
+                    { id: 'photoT01', name: 'photoT01_files' },
+                    { id: 'photoT02', name: 'photoT02_files' },
+                    { id: 'photoT03', name: 'photoT03_files' }
+                ];
+
+                photoInputs.forEach(inputInfo => {
+                    const inputElement = document.getElementById(inputInfo.id);
+                    if (inputElement && inputElement.files.length > 0) {
+                        for (let i = 0; i < inputElement.files.length; i++) {
+                            formData.append(inputInfo.name, inputElement.files[i]);
+                        }
+                    }
+                });
             }
 
             fetch('/run-model', {
@@ -372,43 +451,57 @@
             })
             .then(response => {
                 if (!response.ok) {
-                    return response.json().then(errData => { throw new Error(errData.error || `Server error: ${response.statusText}`); })
-                        .catch(() => { throw new Error(`Server error: ${response.statusText}`); });
+                    return response.json().then(errData => { 
+                        throw { serverError: true, data: errData };
+                    }).catch(() => { 
+                        throw { serverError: false, statusText: response.statusText, status: response.status }; 
+                    });
                 }
                 return response.json();
             })
             .then(data => {
-                console.log('Received from backend:', data);
-                let resultsUrl = 'results.html?';
-                let params = new URLSearchParams();
+                hideLoadingIndicator();
 
-                params.append('method', data.method);
-
-                if (data.count !== undefined) {
-                    params.append('count', data.count);
-                    if (data.totalRecords !== undefined) {
-                        params.append('totalRecords', data.totalRecords);
-                    }
-                    if (data.fileId) {
-                        params.append('fileId', data.fileId);
-                    }
-                } else if (data.resultsId) {
-                    params.append('resultsId', data.resultsId);
-                    if (data.fileId) {
-                        params.append('fileId', data.fileId);
-                    }
-                }
-
-                resultsUrl += params.toString();
-                window.location.href = resultsUrl;
+                const currentAction = actionSelect.value;
+                window.location.href = `results.html?action=${currentAction}&resultData=${encodeURIComponent(JSON.stringify(data))}`;
             })
             .catch(error => {
-                console.error('Error processing file via backend:', error);
-                statusArea.textContent = `Error: ${error.message}`;
+                hideLoadingIndicator();
+                console.error('Fetch Error or Server Error:', error);
+                let errorMessage = 'Network error or problem processing your request. Please try again.';
+                if (error.serverError && error.data && error.data.error) {
+                    errorMessage = `Server Error: ${error.data.error}${error.data.details ? '. Details: ' + JSON.stringify(error.data.details) : ''}`;
+                } else if (error.statusText) {
+                    errorMessage = `Server Error: ${error.status} - ${error.statusText}.`;
+                }
+                statusArea.textContent = errorMessage;
                 statusArea.style.color = 'var(--error-color)';
-                runButton.disabled = false;
+                statusArea.style.display = 'block';
             });
         });
+
+        // --- Define Loading Indicator Functions ---
+        function showLoadingIndicator(message = 'Processing... please wait.') {
+            if (statusArea) {
+                statusArea.textContent = message;
+                statusArea.style.color = 'var(--text-color)';
+                statusArea.style.display = 'block';
+            }
+            if (runButton) {
+                runButton.disabled = true;
+            }
+        }
+
+        function hideLoadingIndicator() {
+            if (statusArea) {
+                statusArea.textContent = '';
+                statusArea.style.display = 'none';
+            }
+            if (runButton) {
+                runButton.disabled = false;
+            }
+        }
+        // --- End Loading Indicator Functions ---
 
         // Initial check
         checkEnableButton();

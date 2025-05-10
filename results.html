@@ -11,11 +11,11 @@
         :root {
             --background-color: #f8f9fa;
             --text-color: #343a40;
-            --primary-accent: #20c997;
+            --primary-accent: #20c997; /* Green accent */
             --primary-accent-darker: #1baa80;
-            --secondary-accent: #6c757d;
+            --secondary-accent: #6c757d; /* Grey for buttons */
             --container-bg: #ffffff;
-            --border-color: #dee2e6;
+            --border-color: #dee2e6; /* Light grey for borders/lines */
             --error-color: #dc3545;
             --font-family: 'Nunito Sans', sans-serif;
             --border-radius: 6px;
@@ -31,461 +31,508 @@
             color: var(--text-color);
             font-family: var(--font-family);
             margin: 0;
-            padding: 40px 20px; /* Add padding */
+            padding: 40px 20px; /* Increased padding */
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            /* justify-content: center; Removed to allow content to flow from top */
             min-height: 100vh;
         }
 
         #resultContainer {
             background-color: var(--container-bg);
-            padding: 40px;
+            padding: 30px 40px; /* Adjusted padding */
             border-radius: var(--border-radius);
             box-shadow: var(--box-shadow);
-            text-align: center;
-            max-width: 600px;
-            width: 90%; /* Responsive width */
+            /* text-align: center; Removed for more flexible internal alignment */
+            max-width: 700px; /* Increased max-width for new layout */
+            width: 90%;
+            margin-top: 20px; /* Add some margin at the top */
         }
 
         #resultHeader {
-            margin-bottom: 20px;
+            font-size: 1.8em; /* Larger title */
+            font-weight: 600; /* Slightly less bold than 700 */
+            color: var(--text-color); /* Standard text color for title */
+            margin-bottom: 30px; /* More space below title */
+            text-align: center; /* Center the main title */
         }
 
         #resultDetails {
-            margin-bottom: 35px;
+            margin-bottom: 25px;
+            font-size: 1em; /* Base font size for details */
+            line-height: 1.6;
+            text-align: left; /* Align text to left for list items */
         }
-
-        #resultMessage {
-            font-size: 1.4em;
-            font-weight: 600;
-            line-height: 1.5;
-        }
-
-        /* Style for the cluster results list */
-        #clusterList {
-            list-style-type: none;
-            padding: 0;
-            margin-top: 0;
-            margin-bottom: 15px; /* Add margin below list */
-            text-align: left;
-            display: inline-block;
-            width: 100%; /* Allow list to take width */
-            max-width: 450px; /* Control max width */
-        }
-
-        #clusterList li {
-            margin-bottom: 10px;
-            font-size: 1.1em;
+        /* REMOVE OLD #resultDetails p and .result-value styles if they conflict */
+        
+        /* New styles for the cluster results layout */
+        .location-entry, .overall-summary-container {
             display: flex;
-            justify-content: space-between;
-            align-items: center; /* Align items vertically */
-            /* min-width: 350px; /* Adjusted min-width */
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 8px;
-            padding-top: 5px;
-            gap: 10px; /* Add gap between elements */
+            align-items: center; /* Vertically align location ID with its stats block */
+            margin-bottom: 15px; /* Reduced margin */
+            padding: 10px 0; /* Reduced padding */
         }
 
-        #clusterList li:last-child {
-            border-bottom: none;
-        }
-
-        #clusterList .location-name {
-            font-weight: bold;
-            color: var(--primary-accent);
-            flex-shrink: 0; /* Prevent name from shrinking */
-            margin-right: 10px;
-        }
-
-        #clusterList .counts {
-            text-align: right;
-            display: flex; /* Use flex for counts */
-            gap: 15px; /* Space between count items */
-            flex-grow: 1; /* Allow counts section to grow */
-            justify-content: flex-end; /* Align counts to the right */
-        }
-
-        #clusterList .count-item {
-            display: inline-block;
-            min-width: 75px; /* Adjusted min-width for more columns */
-            text-align: right;
-        }
-
-        #clusterList .count-item .label {
-            font-size: 0.85em;
-            color: var(--secondary-accent);
-            margin-right: 5px;
-            display: block; /* Put label on top */
-            text-align: right; /* Align label text */
-            margin-bottom: 2px;
-        }
-
-        #clusterList .count-item .value {
-            font-weight: 600;
-            display: block; /* Put value below label */
-            text-align: right; /* Align value text */
-        }
-
-        /* Style for the total row */
-        #totalRow {
-            margin-top: 20px;
-            padding-top: 15px;
-            border-top: 2px solid var(--text-color);
-            font-weight: bold;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 1.15em;
-            max-width: 450px; /* Match list width */
-            width: 100%;
-            margin-left: auto; /* Center the total row */
-            margin-right: auto;
-            gap: 10px;
-        }
-
-        #totalRow .total-label {
-            flex-shrink: 0;
-            margin-right: 10px;
-        }
-
-        #totalRow .total-counts {
-            text-align: right;
-            display: flex;
-            gap: 15px;
-            flex-grow: 1;
-            justify-content: flex-end;
-        }
-
-        #totalRow .count-item { /* Reuse styles */
-            display: inline-block;
-            min-width: 80px;
-            text-align: right;
-        }
-
-        #totalRow .count-item .label { /* Reuse styles */
-            font-size: 0.85em;
-            color: var(--secondary-accent);
-            margin-right: 5px;
-            display: block;
-            text-align: right;
-            margin-bottom: 2px;
-        }
-
-        #totalRow .count-item .value { /* Reuse styles */
-            font-weight: 600;
-            display: block;
-            text-align: right;
-        }
-
-        .button-container {
-            display: flex;
-            justify-content: center;
-            gap: 15px; /* Space between buttons */
-            flex-wrap: wrap; /* Allow buttons to wrap on small screens */
-        }
-
-        /* Base button style */
-        .results-button {
-            display: inline-block;
-            padding: 12px 25px;
-            font-size: 1rem;
-            font-weight: 600;
+        .location-entry.has-inconsistent-details { /* Style for clickable entries */
             cursor: pointer;
-            border: none;
-            border-radius: var(--border-radius);
-            text-decoration: none;
-            transition: all 0.2s ease-in-out;
-            text-align: center;
+        }
+        .location-entry.has-inconsistent-details:hover {
+            background-color: #f0f0f0; /* Slight hover effect */
         }
 
-        /* Specific button styles */
-        .back-button {
-            background-color: var(--secondary-accent);
-            color: white;
+        .location-id {
+            font-size: 1.4em; /* Reduced from 1.7em */
+            font-weight: 600;
+            color: var(--primary-accent);
+            margin-right: 25px; /* Reduced margin */
+            min-width: 60px; /* Adjusted min-width */
+            text-align: left;
         }
-        .back-button:hover {
-            background-color: #5a6268; /* Darker grey */
+
+        .stats-grid {
+            display: flex;
+            flex-grow: 1;
+            justify-content: space-around; /* Distribute stat items */
+            align-items: flex-start; /* Align items to the top */
+        }
+
+        .stat-item {
+            text-align: center; /* Center text within each stat item */
+            min-width: 70px; /* Adjusted min-width */
+        }
+
+        /* Style for the "Inconsistent" value when details are available */
+        .location-entry.has-inconsistent-details .stat-item:nth-child(3) .stat-value {
+            color: var(--error-color); /* Make inconsistent count red if clickable */
+            font-weight: 700;
+        }
+
+        .stat-label {
+            display: block;
+            font-size: 0.8em; /* Slightly reduced */
+            color: var(--secondary-accent); /* Softer color for labels */
+            margin-bottom: 3px; /* Reduced margin */
+        }
+
+        .stat-value {
+            display: block;
+            font-size: 1.3em; /* Reduced from 1.5em */
+            font-weight: 700; /* Bold */
+            color: var(--text-color);
+        }
+        
+        .separator {
+            border: none;
+            border-top: 1px solid var(--border-color);
+            margin: 0 0 15px 0; /* Adjusted margin for separator */
+        }
+
+        .overall-summary-container .summary-label {
+            font-size: 1.1em; /* Reduced */
+            font-weight: 700;
+            color: var(--text-color);
+            margin-right: 30px;
+            min-width: 150px; /* Give it enough space */
+        }
+        /* End of new styles for cluster results */
+
+        #errorMessageDisplay {
+            color: var(--error-color);
+            font-weight: 600;
+            margin-bottom: 20px;
+            min-height: 1.2em;
+        }
+        
+        /* Updated styles for the button container */
+        #actionButtonsContainer { /* Was .button-container, now using ID for JS */
+            margin-top: 30px;
+            display: flex;            /* Enable flexbox */
+            justify-content: center;  /* Center buttons horizontally */
+            align-items: stretch;      /* Make buttons same height */
+            gap: 20px;                /* Space between buttons */
+            width: 100%;              /* Allow container to take full width */
+            padding-top: 20px; /* Add padding if there's a line above */
+            /* border-top: 1px solid var(--border-color); Optional: line above buttons */
+        }
+
+        .results-button {
+            display: inline-block; /* Flex items are block-like by default */
+            padding: 14px 20px; /* Adjust padding for desired size */
+            font-size: 1em;
+            font-weight: 600;
+            text-decoration: none;
+            border-radius: var(--border-radius);
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            cursor: pointer;
+            border: none; /* Assuming buttons are filled */
+            text-align: center;
+            flex-grow: 1; /* Allow buttons to grow and share space */
+            flex-basis: 0; /* Distribute space evenly from a base of 0 */
+            max-width: 250px; /* Optional: prevent buttons from becoming too wide */
         }
 
         .download-button {
             background-color: var(--primary-accent);
             color: white;
-            /*visibility: hidden;  Hidden by default */
+            border: none;
         }
         .download-button:hover {
             background-color: var(--primary-accent-darker);
-        }
-        .download-button.visible {
-            visibility: visible; /* Show when needed */
+            transform: translateY(-1px);
         }
 
-        #filterTotalAnimals { /* New style for filter total */
-            font-size: 0.95em;
-            color: var(--secondary-accent);
-            margin-top: 5px;
+        .back-button {
+            background-color: var(--secondary-accent);
+            color: white;
+            border: none;
+        }
+        .back-button:hover {
+            background-color: #5a6268;
+            transform: translateY(-1px);
         }
 
-        /* Styles for Inconsistent Details (Part 2) */
-        .location-row.clickable {
-            cursor: pointer;
-            /* background-color: #f0f0f0; Optional: hover effect */
-        }
-        .location-row.clickable:hover {
-            background-color: #e9ecef;
-        }
-        .inconsistent-details-container {
-            padding: 10px 15px;
-            margin-top: 5px;
-            margin-bottom: 10px;
-            background-color: #f8f9fa;
-            border: 1px solid var(--border-color);
+        pre.code-block {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background-color: #f0f0f0;
+            padding: 15px;
+            border: 1px solid #ccc;
             border-radius: var(--border-radius);
             text-align: left;
             font-size: 0.9em;
+            max-height: 300px;
+            overflow-y: auto;
         }
-        .inconsistent-details-container h5 {
+
+        /* Styles for the inconsistent cluster details display */
+        .inconsistent-details-view {
+            background-color: #fff7f7; /* Light red background */
+            border: 1px solid var(--error-color);
+            border-radius: var(--border-radius);
+            padding: 10px 15px;
+            margin-top: 5px; /* Space below the location entry */
+            margin-bottom: 10px; /* Space before the next separator or entry */
+            font-size: 0.9em;
+        }
+        .inconsistent-details-view h5 {
             margin-top: 0;
             margin-bottom: 8px;
-            color: var(--text-color);
-            font-size: 1.1em;
+            color: var(--error-color);
         }
-        .inconsistent-details-container ul {
+        .inconsistent-details-view ul {
             list-style-type: none;
             padding-left: 0;
             margin-bottom: 0;
         }
-        .inconsistent-details-container li {
+        .inconsistent-details-view li {
             padding: 4px 0;
-            border-bottom: 1px dashed #ccc;
+            border-bottom: 1px dashed #f8d7da;
         }
-        .inconsistent-details-container li:last-child {
+        .inconsistent-details-view li:last-child {
             border-bottom: none;
         }
-        .inconsistent-details-container .record-name {
-            font-weight: 500;
-            margin-right: 10px;
-        }
-        .inconsistent-details-container .record-time {
-            color: #555;
-        }
-        #loadingMessage {
-            font-size: 1.2em;
-            color: var(--secondary-accent);
-            padding: 20px;
+        .inconsistent-details-view .detail-label {
+            font-weight: 600;
         }
     </style>
 </head>
 <body>
 
     <div id="resultContainer">
-        <!-- Container for the main message -->
         <div id="resultHeader"></div>
-        <!-- Container for detailed results (list for clusters) -->
+        <div id="errorMessageDisplay"></div>
         <div id="resultDetails">
-            <div id="loadingMessage" style="display: none;">Loading results...</div>
-            <!-- Cluster list and inconsistent details will be rendered here -->
+            <!-- Cluster results will be dynamically inserted here -->
         </div>
 
-        <div class="button-container">
+        <!-- Modified button container -->
+        <div id="actionButtonsContainer" class="button-container">
+            <!-- Download button will be prepended here by JS -->
             <a href="index.html" class="results-button back-button">Back to Upload</a>
-            <!-- Single download button, text/link set by JS -->
-            <a href="#" id="downloadButton" class="results-button download-button">Download CSV</a>
         </div>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        function getQueryParam(param) {
             const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
             const resultHeaderDiv = document.getElementById('resultHeader');
             const resultDetailsDiv = document.getElementById('resultDetails');
-            const downloadButton = document.getElementById('downloadButton');
-            const loadingMessageDiv = document.getElementById('loadingMessage');
+            const errorMessageDiv = document.getElementById('errorMessageDisplay');
+            const actionButtonsContainerDiv = document.getElementById('actionButtonsContainer'); // Get the button container
 
-            // DEBUG: Log the element itself
-            console.log("ResultsPage: Download button element found by getElementById:", downloadButton);
+            resultHeaderDiv.innerHTML = '';
+            resultDetailsDiv.innerHTML = '';
+            errorMessageDiv.innerHTML = '';
 
-            if (!downloadButton) {
-                console.error("CRITICAL ERROR: The HTML element with id='downloadButton' was NOT FOUND in the document. The button cannot be controlled.");
-                // Display an error on the page for the user if the button is critical
-                const buttonContainer = document.querySelector('.button-container');
-                if (buttonContainer) {
-                    const errorMsg = document.createElement('p');
-                    errorMsg.textContent = 'Error: Download button is missing. Please contact support.';
-                    errorMsg.style.color = 'var(--error-color)';
-                    buttonContainer.appendChild(errorMsg);
-                }
-            } else {
-                downloadButton.style.display = 'none'; // Initially hide the download button if found
+            const action = getQueryParam('action');
+            const resultDataString = getQueryParam('resultData');
+
+            if (!resultDataString) {
+                resultHeaderDiv.textContent = 'Error'; // Generic header for error
+                errorMessageDiv.textContent = 'No result data provided to this page.';
+                return;
             }
 
-            const method = urlParams.get('method');
-            const decodedMethod = method ? decodeURIComponent(method) : 'Unknown Method';
+            try {
+                const data = JSON.parse(decodeURIComponent(resultDataString));
+                console.log("Received data on results.html (initial):", data);
 
-            const countParam = urlParams.get('count');
-            const totalRecordsParam = urlParams.get('totalRecords');
-            const fileId = urlParams.get('fileId'); // Get fileId from URL
-            const resultsId = urlParams.get('resultsId');
+                if (data.error) {
+                    resultHeaderDiv.textContent = 'Operation Failed';
+                    errorMessageDiv.textContent = `Server Error: ${data.error}${data.details ? ' - ' + (typeof data.details === 'string' ? data.details : JSON.stringify(data.details)) : ''}`;
+                } else if (data.ranTestScript) {
+                    resultHeaderDiv.textContent = 'TensorFlow Test Script Executed';
+                    let outputHtml = `<p>${data.message || 'Test script ran.'}</p>`;
+                    if (data.output) {
+                        outputHtml += `<h4>Output:</h4><pre class="code-block">${data.output}</pre>`;
+                    }
+                    resultDetailsDiv.innerHTML = outputHtml;
+                } else if (action === 'filter' && data.filtered_count !== undefined && data.outputFileName) {
+                    resultHeaderDiv.textContent = 'Time Interval Filtering Complete';
+                    resultDetailsDiv.innerHTML = `
+                        <p class="result-item">Original Total Records: <span class="result-value">${data.total_records !== undefined ? data.total_records : 'N/A'}</span></p>
+                        <p class="result-item">Records After Filtering: <span class="result-value">${data.filtered_count}</span></p>
+                    `;
+                    const downloadLink = document.createElement('a');
+                    downloadLink.href = `/download-filtered/${data.outputFileName}`;
+                    downloadLink.textContent = `Download Filtered CSV`;
+                    downloadLink.className = 'results-button download-button'; // Style as button
+                    actionButtonsContainerDiv.prepend(downloadLink); // Add to the main button container
 
-            // DEBUG: Log the fileId received from the URL
-            console.log("ResultsPage: fileId from URL params:", fileId);
-            console.log("ResultsPage: resultsId (for cluster) from URL params:", resultsId);
+                } else if (action === 'cluster' && data.resultsId && data.outputFileName) { // Simplified initial check
+                    resultHeaderDiv.textContent = 'Cluster Analysis Results using DBSCAN clustering';
+                    
+                    // Create download button (outputFileName is from initial query params)
+                    const downloadLink = document.createElement('a');
+                    downloadLink.href = `/download-clustered/${data.outputFileName}`; // Use outputFileName from initial data
+                    downloadLink.textContent = `Download Clustered CSV`; // Text updated
+                    downloadLink.className = 'results-button download-button';
+                    actionButtonsContainerDiv.prepend(downloadLink);
 
-            resultHeaderDiv.innerHTML = `<div id="resultMessage">Results for ${decodedMethod}</div>`;
-
-            if (resultsId) { // --- Handle Cluster Results ---
-                loadingMessageDiv.style.display = 'block';
-                resultDetailsDiv.innerHTML = ''; 
-
-                fetch(`/api/cluster-details/${resultsId}`)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`Network response was not ok: ${response.statusText}`);
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        loadingMessageDiv.style.display = 'none';
-                        // Log the data received from the API
-                        console.log("ResultsPage: Fetched cluster data from API:", data); 
-
-                        let headerText = `Cluster Analysis Results using ${decodedMethod}`;
-                        resultHeaderDiv.innerHTML = `<div id="resultMessage">${headerText}</div>`;
-
-                        let listHtml = '<ul id="clusterList">';
-                        let totalOverallClusters = 0;
-                        let totalOverallInconsistencies = 0;
-                        let totalOverallAnimalRecords = 0;
-
-                        for (const location in data) {
-                            if (data.hasOwnProperty(location)) {
-                                const locData = data[location];
-                                const total = locData.total_clusters || 0;
-                                const inconsistent = locData.inconsistent_clusters_count || 0;
-                                const animals = locData.total_animal_records || 0;
-                                let accuracy = 'N/A';
-                                if (total > 0) {
-                                    accuracy = (((total - inconsistent) / total) * 100).toFixed(1) + '%';
-                                } else if (total === 0 && inconsistent === 0) {
-                                    accuracy = '100.0%';
-                                }
-
-                                totalOverallClusters += total;
-                                totalOverallInconsistencies += inconsistent;
-                                totalOverallAnimalRecords += animals;
-
-                                const hasInconsistentDetails = locData.inconsistent_details && locData.inconsistent_details.length > 0;
-                                const clickableClass = hasInconsistentDetails ? 'clickable' : '';
-
-                                listHtml += `<li class="location-row ${clickableClass}" data-location="${location}">
-                                                <span class="location-name">${location}</span>
-                                                <span class="counts">
-                                                    <span class="count-item"><span class="label">Animals</span><span class="value">${animals}</span></span>
-                                                    <span class="count-item"><span class="label">Clusters</span><span class="value">${total}</span></span>
-                                                    <span class="count-item"><span class="label">Inconsistent</span><span class="value">${inconsistent}</span></span>
-                                                    <span class="count-item"><span class="label">Accuracy</span><span class="value">${accuracy}</span></span>
-                                                </span>
-                                            </li>
-                                            <div id="details-${location}" class="inconsistent-details-container" style="display: none;"></div>`;
+                    // Fetch the full JSON results for detailed display
+                    fetch(`/results/${data.resultsId}`)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
                             }
-                        }
-                        listHtml += '</ul>';
-
-                        let overallAccuracy = 'N/A';
-                        if (totalOverallClusters > 0) {
-                            overallAccuracy = (((totalOverallClusters - totalOverallInconsistencies) / totalOverallClusters) * 100).toFixed(1) + '%';
-                        } else if (totalOverallClusters === 0 && totalOverallInconsistencies === 0) {
-                            overallAccuracy = '100.0%';
-                        }
-
-                        const totalRowHtml = `<div id="totalRow">
-                                                <span class="total-label">Overall Total:</span>
-                                                <span class="total-counts">
-                                                    <span class="count-item"><span class="label">Animals</span><span class="value">${totalOverallAnimalRecords}</span></span>
-                                                    <span class="count-item"><span class="label">Clusters</span><span class="value">${totalOverallClusters}</span></span>
-                                                    <span class="count-item"><span class="label">Inconsistent</span><span class="value">${totalOverallInconsistencies}</span></span>
-                                                    <span class="count-item"><span class="label">Accuracy</span><span class="value">${overallAccuracy}</span></span>
-                                                </span>
-                                            </div>`;
-                        resultDetailsDiv.innerHTML = listHtml + totalRowHtml;
-
-                        document.querySelectorAll('.location-row.clickable').forEach(row => {
-                            row.addEventListener('click', function() {
-                                const loc = this.dataset.location;
-                                const detailsContainer = document.getElementById(`details-${loc}`);
-                                const locSpecificData = data[loc]; 
-
-                                if (detailsContainer.style.display === 'none') {
-                                    let detailsHtmlContent = `<h5>Inconsistent Clusters for ${loc}:</h5>`;
-                                    if (locSpecificData.inconsistent_details && locSpecificData.inconsistent_details.length > 0) {
-                                        locSpecificData.inconsistent_details.forEach(clusterDetail => {
-                                            detailsHtmlContent += `<h6>Cluster ID (local): ${clusterDetail.cluster_id_local}</h6><ul>`;
-                                            clusterDetail.records.forEach(record => {
-                                                const cn = record.common_name === null ? 'N/A' : record.common_name;
-                                                const ts = record.timestamp === null ? 'N/A' : record.timestamp;
-                                                detailsHtmlContent += `<li><span class="record-name">${cn}</span> <span class="record-time">(${ts})</span></li>`;
-                                            });
-                                            detailsHtmlContent += `</ul>`;
-                                        });
-                                    } else {
-                                        detailsHtmlContent += '<p>No inconsistent clusters to show.</p>';
-                                    }
-                                    detailsContainer.innerHTML = detailsHtmlContent;
-                                    detailsContainer.style.display = 'block';
-                                } else {
-                                    detailsContainer.style.display = 'none';
-                                    detailsContainer.innerHTML = '';
+                            return response.json();
+                        })
+                        .then(fullData => {
+                            console.log("Fetched full cluster data:", fullData);
+                            if (fullData && fullData.clusters && fullData.clusters.details_by_group) {
+                                // --- Update Summary Display ---
+                                if (fullData.clusters.summary) {
+                                    const summary = fullData.clusters.summary;
+                                    // Example: if you had a div for summary, update it
+                                    // This example assumes you might want to display these in separate elements or a preformatted block
+                                    let summaryHtml = `<strong>Overall Summary:</strong><br>
+                                                       EPS Used: ${summary.eps_used}<br>
+                                                       Total Records in Input CSV: ${summary.total_records_in_input_csv}<br>
+                                                       Total Records Processed for Clustering: ${summary.total_records_processed_for_clustering}<br>
+                                                       Total Clusters (Output Records): ${summary.total_records_in_output_csv}`;
+                                    
+                                    // If you have a specific element for the old summary block:
+                                    // const summaryElement = document.getElementById('clusterOverallSummary'); // Assuming you create such an element
+                                    // if(summaryElement) summaryElement.innerHTML = summaryHtml;
+                                    // For now, let's log it to see if it's picked up.
+                                    console.log("Overall Summary Data:", summary);
                                 }
-                            });
+                                // --- End Update Summary Display ---
+
+                                const detailsByGroup = fullData.clusters.details_by_group;
+                                resultDetailsDiv.innerHTML = ''; // Clear previous content
+
+                                let overallAnimals = 0;
+                                let overallClusters = 0;
+                                let overallInconsistent = 0;
+
+                                const sortedLocationKeys = Object.keys(detailsByGroup).sort((a, b) => {
+                                    const aMatch = a.match(/([A-Z]+)(\d+)/);
+                                    const bMatch = b.match(/([A-Z]+)(\d+)/);
+                                    if (aMatch && bMatch) {
+                                        if (aMatch[1] !== bMatch[1]) return aMatch[1].localeCompare(bMatch[1]);
+                                        return parseInt(aMatch[2], 10) - parseInt(bMatch[2], 10);
+                                    }
+                                    return a.localeCompare(b);
+                                });
+
+                                sortedLocationKeys.forEach(locationKey => {
+                                    const details = detailsByGroup[locationKey];
+                                    const animals = details.total_animal_records || 0;
+                                    const clusters = details.total_clusters || 0;
+                                    const inconsistent = details.inconsistent_clusters_count || 0;
+                                    const inconsistentDetailsData = details.inconsistent_details || [];
+
+                                    overallAnimals += animals;
+                                    overallClusters += clusters;
+                                    overallInconsistent += inconsistent;
+
+                                    let accuracy = 'N/A';
+                                    if (clusters > 0) {
+                                        accuracy = (((clusters - inconsistent) / clusters) * 100).toFixed(1) + '%';
+                                    } else if (clusters === 0 && inconsistent === 0) {
+                                        accuracy = '100.0%'; // Or 'N/A' if preferred
+                                    }
+
+                                    const locationEntryDiv = document.createElement('div');
+                                    locationEntryDiv.className = 'location-entry';
+                                    
+                                    if (inconsistent > 0 && inconsistentDetailsData.length > 0) {
+                                        locationEntryDiv.classList.add('has-inconsistent-details');
+                                        // Store details as a JSON string in a data attribute
+                                        locationEntryDiv.setAttribute('data-inconsistent-details', JSON.stringify(inconsistentDetailsData));
+                                        locationEntryDiv.setAttribute('data-location-id', locationKey); // For the details header
+                                    }
+
+                                    locationEntryDiv.innerHTML = `
+                                        <div class="location-id">${locationKey}</div>
+                                        <div class="stats-grid">
+                                            <div class="stat-item">
+                                                <span class="stat-label">Animals</span>
+                                                <span class="stat-value">${animals}</span>
+                                            </div>
+                                            <div class="stat-item">
+                                                <span class="stat-label">Clusters</span>
+                                                <span class="stat-value">${clusters}</span>
+                                            </div>
+                                            <div class="stat-item">
+                                                <span class="stat-label">Inconsistent</span>
+                                                <span class="stat-value">${inconsistent}</span>
+                                            </div>
+                                            <div class="stat-item">
+                                                <span class="stat-label">Accuracy</span>
+                                                <span class="stat-value">${accuracy}</span>
+                                            </div>
+                                        </div>
+                                    `;
+                                    resultDetailsDiv.appendChild(locationEntryDiv);
+                                    
+                                    // Add separator if not the last item (visual cue)
+                                    const hr = document.createElement('hr');
+                                    hr.className = 'separator';
+                                    resultDetailsDiv.appendChild(hr);
+                                });
+                                
+                                // Remove the last separator
+                                const lastSeparator = resultDetailsDiv.querySelector('hr.separator:last-child');
+                                if (lastSeparator) {
+                                    lastSeparator.remove();
+                                }
+
+
+                                // Calculate Overall Accuracy
+                                let overallAccuracy = 'N/A';
+                                if (overallClusters > 0) {
+                                    overallAccuracy = (((overallClusters - overallInconsistent) / overallClusters) * 100).toFixed(1) + '%';
+                                } else if (overallClusters === 0 && overallInconsistent === 0) {
+                                    overallAccuracy = '100.0%'; // Or 'N/A'
+                                }
+                                
+                                // Add Overall Total section
+                                const overallSummaryDiv = document.createElement('div');
+                                overallSummaryDiv.className = 'overall-summary-container'; // Use the container class
+                                // Add a separator before overall summary if there were location entries
+                                if (sortedLocationKeys.length > 0) {
+                                    const hrOverall = document.createElement('hr');
+                                    hrOverall.className = 'separator'; // Can reuse or make a thicker one
+                                    hrOverall.style.borderTopWidth = "2px"; // Make it thicker
+                                    hrOverall.style.borderColor = "var(--text-color)";
+                                    resultDetailsDiv.appendChild(hrOverall);
+                                }
+
+                                overallSummaryDiv.innerHTML = `
+                                    <div class="summary-label">Overall Total:</div>
+                                    <div class="stats-grid">
+                                        <div class="stat-item">
+                                            <span class="stat-label">Animals</span>
+                                            <span class="stat-value">${overallAnimals}</span>
+                                        </div>
+                                        <div class="stat-item">
+                                            <span class="stat-label">Clusters</span>
+                                            <span class="stat-value">${overallClusters}</span>
+                                        </div>
+                                        <div class="stat-item">
+                                            <span class="stat-label">Inconsistent</span>
+                                            <span class="stat-value">${overallInconsistent}</span>
+                                        </div>
+                                        <div class="stat-item">
+                                            <span class="stat-label">Accuracy</span>
+                                            <span class="stat-value">${overallAccuracy}</span>
+                                        </div>
+                                    </div>
+                                `;
+                                resultDetailsDiv.appendChild(overallSummaryDiv);
+
+                            } else {
+                                errorMessageDiv.textContent = 'Error: Could not load detailed cluster data.';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error fetching full results:', error);
+                            errorMessageDiv.textContent = `Error fetching detailed results: ${error.message}`;
                         });
-
-                        // Show and configure download button for CLUSTER results
-                        // The fileId for cluster results is passed alongside resultsId from index.html
-                        console.log("ResultsPage: Attempting to show download button for CLUSTER. File ID:", fileId);
-                        if (downloadButton && fileId) { // Check if downloadButton exists
-                            downloadButton.href = `/download-clustered/${encodeURIComponent(fileId)}`;
-                            downloadButton.textContent = 'Download Clustered CSV';
-                            downloadButton.style.display = 'inline-block';
-                        } else {
-                            if (!downloadButton) console.error("ResultsPage: Download button for CLUSTER not shown because element is missing.");
-                            else if (!fileId) console.log("ResultsPage: Download button for CLUSTER not shown because fileId is missing.");
-                            if (downloadButton) downloadButton.style.display = 'none';
-                        }
-                    })
-                    .catch(error => {
-                        loadingMessageDiv.style.display = 'none';
-                        resultDetailsDiv.innerHTML = `<p style="color: var(--error-color);">Error loading cluster results: ${error.message}</p>`;
-                        console.error('Error fetching cluster details:', error);
-                        if (downloadButton) downloadButton.style.display = 'none';
-                    });
-
-            } else if (countParam !== null) { // --- Handle Filter Results ---
-                loadingMessageDiv.style.display = 'none';
-                let headerMessage = `<div id="resultMessage">Found ${countParam} independent detections based on the ${decodedMethod}.</div>`;
-                if (totalRecordsParam !== null) {
-                    headerMessage += `<div id="filterTotalAnimals">Of ${totalRecordsParam} total animals captured.</div>`;
-                }
-                resultHeaderDiv.innerHTML = headerMessage;
-                resultDetailsDiv.innerHTML = ''; // Clear details area for filter results
-
-                // Show and configure download button for FILTER results
-                console.log("ResultsPage: Attempting to show download button for FILTER. File ID:", fileId);
-                if (downloadButton && fileId) { // Check if downloadButton exists
-                    downloadButton.href = `/download-filtered/${encodeURIComponent(fileId)}`;
-                    downloadButton.textContent = 'Download Filtered CSV';
-                    downloadButton.style.display = 'inline-block';
                 } else {
-                    if (!downloadButton) console.error("ResultsPage: Download button for FILTER not shown because element is missing.");
-                    else if (!fileId) console.log("ResultsPage: Download button for FILTER not shown because fileId is missing.");
-                    if (downloadButton) downloadButton.style.display = 'none';
+                    resultHeaderDiv.textContent = 'Unknown Action or Incomplete Data';
+                    errorMessageDiv.textContent = 'Incomplete or unrecognized results received. Please try again.';
+                    console.warn("Unrecognized data structure on results.html:", data);
                 }
-            } else {
-                loadingMessageDiv.style.display = 'none';
-                resultHeaderDiv.innerHTML = `<div id="resultMessage" style="color: var(--error-color);">Incomplete results received. Please try again.</div>`;
-                resultDetailsDiv.innerHTML = '';
-                if (downloadButton) downloadButton.style.display = 'none';
+
+            } catch (e) {
+                console.error("Error parsing resultData on results.html:", e);
+                errorMessageDiv.textContent = 'Error loading results data on this page. Check console for details.';
             }
+
+            // Event listener for toggling inconsistent cluster details
+            resultDetailsDiv.addEventListener('click', function(event) {
+                const clickedEntry = event.target.closest('.location-entry.has-inconsistent-details');
+                if (!clickedEntry) {
+                    return; // Click was not on a relevant entry
+                }
+
+                // Check if details are already shown for this entry
+                const existingDetailsView = clickedEntry.nextElementSibling;
+                if (existingDetailsView && existingDetailsView.classList.contains('inconsistent-details-view')) {
+                    existingDetailsView.remove(); // Hide details
+                } else {
+                    // Remove any other open details views first to keep it clean
+                    const allOpenDetails = resultDetailsDiv.querySelectorAll('.inconsistent-details-view');
+                    allOpenDetails.forEach(view => view.remove());
+
+                    // Show details for the clicked entry
+                    const detailsDataString = clickedEntry.getAttribute('data-inconsistent-details');
+                    const locationId = clickedEntry.getAttribute('data-location-id');
+                    if (detailsDataString) {
+                        try {
+                            const inconsistentDetails = JSON.parse(detailsDataString);
+                            if (inconsistentDetails.length > 0) {
+                                const detailsViewDiv = document.createElement('div');
+                                detailsViewDiv.className = 'inconsistent-details-view';
+                                
+                                let detailsHtml = `<h5>Inconsistent Clusters for ${locationId}</h5><ul>`;
+                                inconsistentDetails.forEach(detail => {
+                                    detailsHtml += `<li>
+                                        <span class="detail-label">Cluster ID:</span> ${detail.cluster_id}<br>
+                                        <span class="detail-label">Species:</span> ${detail.species_list.join(', ')}<br>
+                                        <span class="detail-label">Records in Cluster:</span> ${detail.count}
+                                    </li>`;
+                                });
+                                detailsHtml += `</ul>`;
+                                detailsViewDiv.innerHTML = detailsHtml;
+                                
+                                // Insert the details view right after the clicked location entry
+                                clickedEntry.parentNode.insertBefore(detailsViewDiv, clickedEntry.nextSibling);
+                            }
+                        } catch (e) {
+                            console.error("Error parsing inconsistent details data:", e);
+                        }
+                    }
+                }
+            });
         });
     </script>
 

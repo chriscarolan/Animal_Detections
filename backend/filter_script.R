@@ -114,6 +114,7 @@ tryCatch({
 # Print results as JSON to standard output
 output_data <- list(
   filtered_count = result_count,
-  total_records = initial_total_records # Include the total records
+  total_records = initial_total_records, # Include the total records
+  output_file = output_csv_path  # Add the output file path here
 )
 cat(jsonlite::toJSON(output_data, auto_unbox = TRUE)) 
