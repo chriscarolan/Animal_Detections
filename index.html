@@ -184,28 +184,71 @@
         /* Styles for the new Photo Uploads Section */
         #photoUploadsContainer {
             /* display: none; is handled by JS */
-            margin-top: 15px; /* Add some space above this section */
-            margin-bottom: 15px; /* Add some space below this section before the run button */
-            border: 1px solid var(--border-color); /* Optional: add a light border */
-            padding: 15px;
+            margin-top: 20px; /* Add some space above this section */
+            margin-bottom: 20px; /* Add some space below this section before the run button */
+            border: 1px solid var(--border-color);
+            padding: 20px;
             border-radius: var(--border-radius);
-            background-color: var(--container-bg-lighter, #f8f9fa); /* Slightly lighter background */
-        }
-
-        #photoUploadsContainer .form-group {
-            margin-bottom: 15px; /* Spacing between each photo upload input */
-        }
-        #photoUploadsContainer .form-group:last-child {
-            margin-bottom: 0; /* No bottom margin for the last item in this container */
+            background-color: #fdfdfd; /* Slightly off-white */
         }
 
         #photoUploadsContainer p.section-title {
             text-align: center;
-            margin-bottom: 15px;
+            margin-top: 0;
+            margin-bottom: 10px;
             font-weight: 600;
-            font-size: 1.05em;
+            font-size: 1.1em;
             color: var(--text-color);
         }
+        #photoUploadsContainer p.section-subtitle {
+            text-align: center;
+            font-size: 0.85em;
+            margin-top: -5px;
+            margin-bottom: 20px;
+            color: var(--secondary-accent);
+        }
+
+        .location-photo-group {
+            border: 1px solid #e0e0e0;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: var(--border-radius);
+            background-color: var(--container-bg);
+        }
+        .location-photo-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .location-photo-group .radio-group-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+        .location-photo-group .radio-options label {
+            margin-right: 15px;
+            font-size: 0.9em;
+            cursor: pointer;
+        }
+        .location-photo-group .radio-options input[type="radio"] {
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+        .location-photo-group .file-upload-area {
+            margin-top: 10px;
+            /* display: none; /* Initially hidden, controlled by JS */
+        }
+        .location-photo-group .file-upload-area label { /* Label for the file input itself */
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+            color: var(--secondary-accent);
+        }
+        .location-photo-group input[type="file"] {
+            font-size: 0.9em;
+            padding: 8px 10px; /* Smaller padding for file inputs */
+        }
+
         /* End of styles for Photo Uploads Section */
 
         #runModelButton {
@@ -321,31 +364,86 @@
                 <!-- New Photo Uploads Section -->
                 <div id="photoUploadsContainer" style="display: none;">
                     <p class="section-title">Optional: Upload Photo Folders for Locations</p>
-                    <p class="section-subtitle" style="text-align: center; font-size: 0.85em; margin-top: -10px; margin-bottom: 15px;">(Select a folder for each location; all images within will be uploaded. Browser support varies.)</p>
-                    <div class="form-group">
-                        <label for="photoN01">N01 Photo Folder:</label>
-                        <input type="file" id="photoN01" name="photoN01_files" webkitdirectory directory>
+                    <p class="section-subtitle">Select "Yes" to use image analysis for a location and upload its photo folder. Browser support for folder upload varies.</p>
+                    
+                    <!-- N01 -->
+                    <div class="location-photo-group" id="locationGroupN01">
+                        <span class="radio-group-label">Use Image Analysis for N01?</span>
+                        <div class="radio-options">
+                            <label><input type="radio" name="useImageN01" value="yes"> Yes</label>
+                            <label><input type="radio" name="useImageN01" value="no" checked> No</label>
+                        </div>
+                        <div class="file-upload-area" style="display: none;">
+                            <label for="photoN01">N01 Photo Folder:</label>
+                            <input type="file" id="photoN01" name="photoN01_files" webkitdirectory directory>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="photoN02">N02 Photo Folder:</label>
-                        <input type="file" id="photoN02" name="photoN02_files" webkitdirectory directory>
+                    
+                    <!-- N02 -->
+                    <div class="location-photo-group" id="locationGroupN02">
+                        <span class="radio-group-label">Use Image Analysis for N02?</span>
+                        <div class="radio-options">
+                            <label><input type="radio" name="useImageN02" value="yes"> Yes</label>
+                            <label><input type="radio" name="useImageN02" value="no" checked> No</label>
+                        </div>
+                        <div class="file-upload-area" style="display: none;">
+                            <label for="photoN02">N02 Photo Folder:</label>
+                            <input type="file" id="photoN02" name="photoN02_files" webkitdirectory directory>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="photoN03">N03 Photo Folder:</label>
-                        <input type="file" id="photoN03" name="photoN03_files" webkitdirectory directory>
+
+                    <!-- N03 -->
+                    <div class="location-photo-group" id="locationGroupN03">
+                        <span class="radio-group-label">Use Image Analysis for N03?</span>
+                        <div class="radio-options">
+                            <label><input type="radio" name="useImageN03" value="yes"> Yes</label>
+                            <label><input type="radio" name="useImageN03" value="no" checked> No</label>
+                        </div>
+                        <div class="file-upload-area" style="display: none;">
+                            <label for="photoN03">N03 Photo Folder:</label>
+                            <input type="file" id="photoN03" name="photoN03_files" webkitdirectory directory>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="photoT01">T01 Photo Folder:</label>
-                        <input type="file" id="photoT01" name="photoT01_files" webkitdirectory directory>
+
+                    <!-- T01 -->
+                    <div class="location-photo-group" id="locationGroupT01">
+                        <span class="radio-group-label">Use Image Analysis for T01?</span>
+                        <div class="radio-options">
+                            <label><input type="radio" name="useImageT01" value="yes"> Yes</label>
+                            <label><input type="radio" name="useImageT01" value="no" checked> No</label>
+                        </div>
+                        <div class="file-upload-area" style="display: none;">
+                            <label for="photoT01">T01 Photo Folder:</label>
+                            <input type="file" id="photoT01" name="photoT01_files" webkitdirectory directory>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="photoT02">T02 Photo Folder:</label>
-                        <input type="file" id="photoT02" name="photoT02_files" webkitdirectory directory>
+
+                    <!-- T02 -->
+                    <div class="location-photo-group" id="locationGroupT02">
+                        <span class="radio-group-label">Use Image Analysis for T02?</span>
+                        <div class="radio-options">
+                            <label><input type="radio" name="useImageT02" value="yes"> Yes</label>
+                            <label><input type="radio" name="useImageT02" value="no" checked> No</label>
+                        </div>
+                        <div class="file-upload-area" style="display: none;">
+                            <label for="photoT02">T02 Photo Folder:</label>
+                            <input type="file" id="photoT02" name="photoT02_files" webkitdirectory directory>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="photoT03">T03 Photo Folder:</label>
-                        <input type="file" id="photoT03" name="photoT03_files" webkitdirectory directory>
+
+                    <!-- T03 -->
+                    <div class="location-photo-group" id="locationGroupT03">
+                        <span class="radio-group-label">Use Image Analysis for T03?</span>
+                        <div class="radio-options">
+                            <label><input type="radio" name="useImageT03" value="yes"> Yes</label>
+                            <label><input type="radio" name="useImageT03" value="no" checked> No</label>
+                        </div>
+                        <div class="file-upload-area" style="display: none;">
+                            <label for="photoT03">T03 Photo Folder:</label>
+                            <input type="file" id="photoT03" name="photoT03_files" webkitdirectory directory>
+                        </div>
                     </div>
+
                 </div>
                 <!-- End of New Photo Uploads Section -->
 
@@ -370,6 +468,9 @@
         const epsLevelContainer = document.getElementById('epsLevelContainer');
         const epsLevelSelect = document.getElementById('epsLevelSelect');
         const photoUploadsContainer = document.getElementById('photoUploadsContainer');
+
+        // Define location IDs for easier iteration
+        const locationIds = ['N01', 'N02', 'N03', 'T01', 'T02', 'T03'];
 
         function checkEnableButton() {
             const fileChosen = fileInput.files.length > 0;
@@ -396,6 +497,16 @@
                 filterMinutesContainer.style.display = 'none';
                 epsLevelContainer.style.display = 'block';
                 photoUploadsContainer.style.display = 'block'; // Show photo uploads
+                // Initialize visibility of file inputs based on default radio selection
+                locationIds.forEach(locId => {
+                    const radioNo = document.querySelector(`input[name="useImage${locId}"][value="no"]`);
+                    const fileArea = document.getElementById(`locationGroup${locId}`).querySelector('.file-upload-area');
+                    if (radioNo && radioNo.checked) {
+                        fileArea.style.display = 'none';
+                    } else {
+                        fileArea.style.display = 'block';
+                    }
+                });
             } else {
                 filterMinutesContainer.style.display = 'none';
                 epsLevelContainer.style.display = 'none';
@@ -412,6 +523,24 @@
             checkEnableButton();
         });
 
+        // Add event listeners for radio buttons in photo uploads
+        locationIds.forEach(locId => {
+            const radios = document.querySelectorAll(`input[name="useImage${locId}"]`);
+            const fileArea = document.getElementById(`locationGroup${locId}`).querySelector('.file-upload-area');
+            radios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.value === 'yes') {
+                        fileArea.style.display = 'block';
+                    } else {
+                        fileArea.style.display = 'none';
+                        // Optional: Clear file input if user switches to "No"
+                        // const fileInput = fileArea.querySelector('input[type="file"]');
+                        // if (fileInput) fileInput.value = ''; 
+                    }
+                });
+            });
+        });
+
         form.addEventListener('submit', function(event) {
             event.preventDefault();
             showLoadingIndicator();
@@ -425,21 +554,19 @@
             } else if (actionSelect.value === 'cluster') {
                 formData.append('epsLevel', epsLevelSelect.value);
 
-                // Append photo files if selected
-                const photoInputs = [
-                    { id: 'photoN01', name: 'photoN01_files' }, // Use distinct names for multer
-                    { id: 'photoN02', name: 'photoN02_files' },
-                    { id: 'photoN03', name: 'photoN03_files' },
-                    { id: 'photoT01', name: 'photoT01_files' },
-                    { id: 'photoT02', name: 'photoT02_files' },
-                    { id: 'photoT03', name: 'photoT03_files' }
-                ];
+                // Append photo files and their 'useImage' choice
+                locationIds.forEach(locId => {
+                    const useImageRadio = document.querySelector(`input[name="useImage${locId}"]:checked`);
+                    const useImageChoice = useImageRadio ? useImageRadio.value : 'no';
+                    formData.append(`useImage${locId}`, useImageChoice);
 
-                photoInputs.forEach(inputInfo => {
-                    const inputElement = document.getElementById(inputInfo.id);
-                    if (inputElement && inputElement.files.length > 0) {
-                        for (let i = 0; i < inputElement.files.length; i++) {
-                            formData.append(inputInfo.name, inputElement.files[i]);
+                    if (useImageChoice === 'yes') {
+                        const photoInputElement = document.getElementById(`photo${locId}`);
+                        if (photoInputElement && photoInputElement.files.length > 0) {
+                            for (let i = 0; i < photoInputElement.files.length; i++) {
+                                // Use a unique field name for multer to group files per location
+                                formData.append(`photo${locId}_files`, photoInputElement.files[i]);
+                            }
                         }
                     }
                 });
